@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- Constants for robot dimensions -->
+    <xacro:property name="PI" value="3.1415926535897931"/>
+    <xacro:property name="stick_mass" value="0.00001"/>
+
+    <!-- simplified collision value -->
+    <xacro:property name="chassis_width" value="0.189"/>
+    <xacro:property name="chassis_length" value="0.233"/>
+    <xacro:property name="chassis_height" value="0.114"/>
+    <xacro:property name="shoulder_radius" value="0.04"/>
+    <xacro:property name="shoulder_length" value="0.028"/>
+    <xacro:property name="hip_shoulder_radius" value="0.041"/>
+    <xacro:property name="hip_shoulder_length" value="0.032"/>
+    <xacro:property name="hip_width" value="0.0245"/>
+    <xacro:property name="hip_height" value="0.034"/>
+    <xacro:property name="knee_width" value="0.016"/>
+    <xacro:property name="knee_height" value="0.016"/>
+    <xacro:property name="foot_radius" value="0.02"/>
+    <xacro:property name="stick_radius" value="0.01"/>
+    <xacro:property name="stick_length" value="0.2"/>
+
+    <xacro:property name="base_to_hip_y" value = "0.0425" />
+    <xacro:property name="base_to_hip_x" value = "0.16" />
+    <xacro:property name="shoulder_to_hip_dist" value = "0.075" />
+    <xacro:property name="hip_joint_dist" value = "0.085" />
+
+    <xacro:property name="hip_cd" value="0.12"/>
+    <xacro:property name="hip_to_knee_dist" value="0.185"/>
+
+    <xacro:property name="knee_to_feet_dist" value="0.137"/>
+    <xacro:property name="knee_x_dist" value="0.018"/>
+
+
+    <!-- dynamics inertial value -->
+    <!-- trunk -->
+    <xacro:property name="chassis_mass" value="1.0"/>
+
+    <!-- hip (left front) -->
+    <xacro:property name="shoulder_mass" value="0.4"/>
+    <xacro:property name="shoulder_y_length" value="0.028"/>
+    <xacro:property name="shoulder_x_length" value="0.08"/>
+    <xacro:property name="shoulder_z_length" value="0.08"/>
+
+
+    <!-- thigh -->
+    <xacro:property name="hip_mass" value="0.4"/>
+    <xacro:property name="hip_y_length" value="0.025"/>
+    <xacro:property name="hip_x_length" value="0.03"/>
+    <xacro:property name="hip_z_length" value="0.12"/>
+
+    <!-- calf -->
+    <xacro:property name="knee_mass" value="0.035"/>
+    <xacro:property name="knee_y_length" value="0.025"/>
+    <xacro:property name="knee_x_length" value="0.03"/>
+    <xacro:property name="knee_z_length" value="0.12"/>
+
+    <!-- foot -->
+    <xacro:property name="foot_mass" value="0.06"/>
+    <xacro:property name="feet_y_length" value="0.02"/>
+    <xacro:property name="feet_x_length" value="0.02"/>
+    <xacro:property name="feet_z_length" value="0.02"/>
+
+</robot>

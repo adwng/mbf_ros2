@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:macro name="leg" params="leg  ">
+
+        <xacro:if value="${leg == 'fl'}">
+            <xacro:property name="base_to_hip_xyz" value="${base_to_hip_x} ${base_to_hip_y} 0" />
+            <xacro:property name="shoulder_to_hip" value="${shoulder_to_hip_dist}" />
+            <xacro:property name="shoulder_orient" value= "0 0 0" />
+            <xacro:property name="shoulder2hip_xyz" value="0 ${-shoulder_to_hip / 2} 0"/>
+            <xacro:property name="shoulder2hip_xyz_inertial" value="0 ${-shoulder_to_hip} 0"/>
+            <xacro:property name="hip_orient" value= "0 0 ${PI}" />
+            <xacro:property name="hip_joint_xyz" value="0 ${hip_joint_dist} 0"/>
+            <xacro:property name="hip_joint_orient" value="0 0 0"/>
+            <xacro:property name="knee_orient" value= "0 0 0" />
+            <xacro:property name="knee_xyz" value="0 0 ${-hip_cd / 2}"/>
+        </xacro:if>
+
+        <xacro:if value="${leg == 'fr'}">
+            <xacro:property name="base_to_hip_xyz" value="${base_to_hip_x} -${base_to_hip_y} 0" />
+            <xacro:property name="shoulder_to_hip" value="${-shoulder_to_hip_dist}" />
+            <xacro:property name="shoulder_orient" value= "${PI} 0 0" />
+            <xacro:property name="shoulder2hip_xyz" value="0 ${-shoulder_to_hip/2} 0"/>
+            <xacro:property name="shoulder2hip_xyz_inertial" value="0 ${-shoulder_to_hip} 0"/>
+            <xacro:property name="hip_orient" value= "0 0 0" />
+            <xacro:property name="hip_joint_xyz" value="0 ${-hip_joint_dist} 0"/>
+            <xacro:property name="hip_joint_orient" value="0 0 0"/>
+
+        </xacro:if>
+
+        <xacro:if value="${leg == 'rl'}">
+            <xacro:property name="base_to_hip_xyz" value="${-base_to_hip_x} ${base_to_hip_y} 0" />
+            <xacro:property name="shoulder_to_hip" value="${shoulder_to_hip_dist}" />
+            <xacro:property name="shoulder_orient" value= "${PI} 0 ${PI}" />
+            <xacro:property name="shoulder2hip_xyz" value="0 ${-shoulder_to_hip/2} 0"/>
+            <xacro:property name="shoulder2hip_xyz_inertial" value="0 ${-shoulder_to_hip} 0"/>
+            <xacro:property name="hip_orient" value= "0 0 ${PI}" />
+            <xacro:property name="hip_joint_xyz" value="0 ${hip_joint_dist} 0"/>
+            <xacro:property name="hip_joint_orient" value="0 0 0"/>
+
+        </xacro:if>
+
+        <xacro:if value="${leg == 'rr'}">
+            <xacro:property name="base_to_hip_xyz" value="-${base_to_hip_x} -${base_to_hip_y} 0" />
+            <xacro:property name="shoulder_to_hip" value="-${shoulder_to_hip_dist}" />
+            <xacro:property name="shoulder_orient" value= "0 0 ${PI}" />
+            <xacro:property name="shoulder2hip_xyz" value="0 ${-shoulder_to_hip/2} 0"/>
+            <xacro:property name="shoulder2hip_xyz_inertial" value="0 ${-shoulder_to_hip} 0"/>
+            <xacro:property name="hip_orient" value= "0 0 0" />
+            <xacro:property name="hip_joint_xyz" value="0 ${-hip_joint_dist} 0"/>
+            <xacro:property name="hip_joint_orient" value="0 0 0"/>
+
+        </xacro:if>
+
+        <joint name="${leg}_shoulder_joint" type="revolute">
+            <axis xyz="1 0 0" />
+            <limit effort="10.0" lower="-0.785398" upper="0.785398" velocity="10.0" />
+            <parent link="chassis" />
+            <child link="${leg}_shoulder_link" />
+            <origin xyz="${base_to_hip_xyz}" rpy="0 0 0" />
+        </joint>
+
+        <link name="${leg}_shoulder_link">
+            <inertial>
+                <mass value="${shoulder_mass}" />
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <inertia ixx="${(1/12) * shoulder_mass * (shoulder_y_length * shoulder_y_length + shoulder_z_length * shoulder_z_length)}" ixy="0.0" ixz="0.0" iyy="${(1/12) * shoulder_mass * (shoulder_x_length * shoulder_x_length + shoulder_z_length * shoulder_z_length)}" iyz="0.0" izz="${(1/12) * shoulder_mass * (shoulder_x_length * shoulder_x_length + shoulder_y_length * shoulder_y_length)}" />
+            </inertial>
+            <collision>
+                <origin xyz="0 0 0" rpy="${shoulder_orient}" />
+                <geometry>
+                    <mesh filename="file://$(find mbf_description)/meshes/Shoulder2Knee.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+            <visual>
+                <origin xyz="0 0 0" rpy="${shoulder_orient}" />
+                <geometry>
+                    <mesh filename="file://$(find mbf_description)/meshes/Shoulder2Knee.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="black" />
+            </visual>
+        </link>
+
+        <joint name="${leg}_hip_joint" type="revolute">
+            <axis xyz="0 1 0" />
+            <limit effort="10.0" lower="-1.5708" upper="1.5708" velocity="10.0" />
+            <parent link="${leg}_shoulder_link" />
+            <child link="${leg}_hip_link" />
+            <origin xyz="${hip_joint_xyz}" rpy="${hip_joint_orient}" />
+        </joint>
+
+        <link name="${leg}_hip_link">
+            <inertial>
+                <mass value="${hip_mass}" />
+                <origin xyz="0 0 ${-hip_cd/2}" rpy="0 0 0" />
+                <inertia ixx="${(1/12) * hip_mass * (hip_y_length * hip_y_length + hip_z_length * hip_z_length)}" ixy="0.0" ixz="0.0" iyy="${(1/12) * hip_mass * (hip_x_length * hip_x_length + hip_z_length * hip_z_length)}" iyz="0.0" izz="${(1/12) * hip_mass * (hip_x_length * hip_x_length + hip_y_length * hip_y_length)}" />
+            </inertial>
+            <collision>
+                <origin xyz="${shoulder2hip_xyz}" rpy="${hip_orient}" />
+                <geometry>
+                    <mesh filename="file://$(find mbf_description)/meshes/Hip.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </collision>
+            <visual>
+                <origin xyz="${shoulder2hip_xyz}" rpy="${hip_orient}" />
+                <geometry>
+                    <mesh filename="file://$(find mbf_description)/meshes/Hip.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+
+            </visual>
+        </link>
+
+        <joint name="${leg}_knee_joint" type="revolute">
+            <axis xyz="0 1 0" />
+            <limit effort="10.0" lower="-2.0944" upper="2.0944" velocity="10.0" />
+            <parent link="${leg}_hip_link" />
+            <child link="${leg}_knee_link" />
+            <origin xyz="0 0 ${-hip_cd}" rpy="0 0 0" />
+        </joint>
+
+        <link name="${leg}_knee_link">
+            <inertial>
+                <mass value="${knee_mass}" />
+                <origin xyz="0 0 ${-hip_cd/2}" rpy="0 0 0" />
+                <inertia ixx="${(1/12) * knee_mass * (knee_y_length * knee_y_length + knee_z_length * knee_z_length)}" ixy="0.0" ixz="0.0" iyy="${(1/12) * knee_mass * (knee_x_length * knee_x_length + knee_z_length * knee_z_length)}" iyz="0.0" izz="${(1/12) * knee_mass * (knee_x_length * knee_x_length + knee_y_length * knee_y_length)}" />
+            </inertial>
+            <collision>
+                <origin xyz="0 0 ${-hip_cd/2}" rpy="0 0 0" />
+                <geometry>
+                    <box size="${knee_x_length} ${knee_y_length} ${knee_z_length}"/>
+                </geometry>
+            </collision>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="file://$(find mbf_description)/meshes/Knee.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+
+            </visual>
+        </link>
+
+        <link name="${leg}_feet_link">
+            <inertial>
+                <mass value="${knee_mass}" />
+                <inertia ixx="${(1/12) * foot_mass * (feet_y_length * feet_y_length + feet_z_length * feet_z_length)}" ixy="0.0" ixz="0.0" iyy="${(1/12) * foot_mass * (feet_x_length * feet_x_length + feet_z_length * feet_z_length)}" iyz="0.0" izz="${(1/12) * foot_mass * (feet_x_length * feet_x_length + feet_y_length * feet_y_length)}" />
+            </inertial>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <sphere radius="${foot_radius}"/>
+                </geometry>
+            </collision>
+            <visual>
+                <origin xyz="${-knee_x_dist} 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="file://$(find mbf_description)/meshes/Squashball.stl" scale="0.001 0.001 0.001"/>
+                </geometry>
+            </visual>
+        </link>
+
+        <joint name="${leg}_feet_joint" type="fixed">
+            <parent link="${leg}_knee_link" />
+            <child link="${leg}_feet_link" />
+            <origin xyz="0 0 ${-knee_to_feet_dist}" rpy="0 0 0" />
+        </joint>
+
+    </xacro:macro>
+</robot>
