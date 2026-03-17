@@ -238,6 +238,9 @@ void MBFControl::set_passive_commands() {
 }
 
 void MBFControl::compute_locomotion() {
+  // issue here, setting pose is fine, can output joint angles, but cannot
+  // output joint angles to walk, have verified that req_vel is active, but when
+  // passed to velocityCommand, it mutates to 0
   req_vel_.linear.x = 0.5;
   RCLCPP_INFO(this->get_logger(), "stance_duration: %.3f",
               gait_config_.stance_duration);
