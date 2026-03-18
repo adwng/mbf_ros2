@@ -33,7 +33,7 @@ def generate_launch_description():
         launch_arguments={
             'use_sim': LaunchConfiguration('use_sim'),
             'rviz': LaunchConfiguration('rviz')
-        }.items()
+        }.items(),
     )
 
     imu_node = Node(

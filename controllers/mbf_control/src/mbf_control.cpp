@@ -38,6 +38,10 @@ MBFControl::MBFControl()
   params.control.max_pitch =
       this->get_parameter("control.max_pitch").as_double();
   params.control.max_yaw = this->get_parameter("control.max_yaw").as_double();
+  params.control.standup_duration =
+      this->get_parameter("control.standup_duration").as_double();
+  params.control.getdown_duration =
+      this->get_parameter("control.getdown_duration").as_double();
 
   params.gamepad.passive_btn =
       this->get_parameter("gamepad.passive_btn").as_int();
@@ -85,8 +89,10 @@ MBFControl::MBFControl()
     return;
   }
 
+  base_.setGaitConfig(gait_config_);
+
   std::array<double, NUM_JOINTS> PASSIVE_POSES = {
-      0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 0.8, -1.5,
+      0.0, 0.6, -1.2, 0.0, 0.6, -1.2, 0.0, 0.6, -1.2, 0.0, 0.6, -1.2,
   };
 
   std::array<double, NUM_JOINTS> STANDING_POSE = {
@@ -138,24 +144,6 @@ void MBFControl::run_interpolation(double dt, int dir) {
   }
 }
 
-bool MBFControl::toggle_state(bool current_state, int btn_idx,
-                              sensor_msgs::msg::Joy::SharedPtr msg) {
-  // 1. Safety check for vector size
-  if (btn_idx >= static_cast<int>(msg->buttons.size())) return current_state;
-
-  bool pressed = msg->buttons[btn_idx];
-  bool prev_pressed =
-      first_joy_received_ ? last_joy_msg_.buttons[btn_idx] : false;
-
-  // 2. Only toggle if we see a 0 -> 1 transition
-  if (pressed && !prev_pressed) {
-    RCLCPP_INFO(this->get_logger(), "Button %d toggled state to %s", btn_idx,
-                !current_state ? "TRUE" : "FALSE");
-    return !current_state;
-  }
-  return current_state;
-}
-
 void MBFControl::robotStateCallback(
     robot_msgs::msg::RobotState::SharedPtr msg) {
   for (int i = 0; i < NUM_JOINTS; i++) {
@@ -166,6 +154,20 @@ void MBFControl::robotStateCallback(
 }
 
 void MBFControl::joyCallback(sensor_msgs::msg::Joy::SharedPtr msg) {
+  req_pose_.position.x = 0.0;
+  req_pose_.position.y = 0.0;
+  req_pose_.position.z = gait_config_.nominal_height;
+  req_pose_.orientation.roll = 0.0;
+  req_pose_.orientation.pitch = 0.0;
+  req_pose_.orientation.yaw = 0.0;
+
+  req_vel_.linear.x = 0.0;
+  req_vel_.linear.y = 0.0;
+  req_vel_.linear.z = 0.0;
+  req_vel_.angular.x = 0.0;
+  req_vel_.angular.y = 0.0;
+  req_vel_.angular.z = 0.0;
+
   auto detect_edge = [&](int btn_idx) {
     if (btn_idx < 0 || btn_idx >= (int)msg->buttons.size()) return false;
     bool pressed = msg->buttons[btn_idx];
@@ -238,28 +240,13 @@ void MBFControl::set_passive_commands() {
 }
 
 void MBFControl::compute_locomotion() {
-  // issue here, setting pose is fine, can output joint angles, but cannot
-  // output joint angles to walk, have verified that req_vel is active, but when
-  // passed to velocityCommand, it mutates to 0
-  req_vel_.linear.x = 0.5;
-  RCLCPP_INFO(this->get_logger(), "stance_duration: %.3f",
-              gait_config_.stance_duration);
-
   float target_joint_positions[12];
   geometry::Transformation target_foot_positions[4];
 
   body_controller_.poseCommand(target_foot_positions, req_pose_);
 
-  float z_before = target_foot_positions[0].Z();
-
-  auto vel_copy = req_vel_;
-  leg_controller_.velocityCommand(target_foot_positions, vel_copy,
+  leg_controller_.velocityCommand(target_foot_positions, req_vel_,
                                   rosTimeToChampTime(clock_.now()));
-
-  float z_after = target_foot_positions[0].Z();
-
-  RCLCPP_INFO(this->get_logger(), "Before: %.2f | After: %.2f",
-              req_vel_.linear.x, vel_copy.linear.x);
 
   kinematics_.inverse(target_joint_positions, target_foot_positions);
 
@@ -355,4 +342,42 @@ void MBFControl::loop() {
   }
 
   publishCommands();
+
+  if (update_time >= std::round(params.ctrl_freq / 10)) {
+    update_dashboard();
+    update_time = 0;
+  }
+  update_time++;
+}
+
+void MBFControl::update_dashboard() {
+  auto safe_btn = [&](int idx) -> bool {
+    if (idx < 0 || idx >= (int)last_joy_msg_.buttons.size()) return false;
+    return last_joy_msg_.buttons[idx];
+  };
+
+  dash.new_row();
+  dash.add_field("FSM", state_string_, TUI::GREEN);
+
+  dash.new_row();
+
+  dash.add_flags("Shoulder Btns",
+                 {{"L1", safe_btn(params.gamepad.l_btn_macro)},
+                  {"L2", safe_btn(params.gamepad.l2_btn_macro)},
+                  {"R1", safe_btn(params.gamepad.r_btn_macro)}});
+
+  dash.add_vector("Vel (x,y,yaw)",
+                  std::array<double, 3>{req_vel_.linear.x, req_vel_.linear.y,
+                                        req_vel_.angular.z},
+                  TUI::RESET);
+
+  dash.new_row();
+  dash.add_vector("Pose (x,y,z,r,p,y)",
+                  std::array<double, 6>{
+                      req_pose_.position.x, req_pose_.position.y,
+                      req_pose_.position.z, req_pose_.orientation.roll,
+                      req_pose_.orientation.pitch, req_pose_.orientation.yaw},
+                  TUI::RESET);
+  dash.new_row();
+  dash.print();
 }

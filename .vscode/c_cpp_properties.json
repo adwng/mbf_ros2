@@ -7,7 +7,8 @@
                 "/opt/ros/humble/include/**",
                 "/usr/include/**",
                 "/home/andrew/projects/mbf_ws/install/**",
-                "/home/andrew/projects/mbf_ws/**"
+                "/home/andrew/projects/mbf_ws/**",
+                "/home/andrew/libtorch/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

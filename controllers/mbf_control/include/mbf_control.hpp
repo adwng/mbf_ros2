@@ -87,6 +87,7 @@ class MBFControl : public rclcpp::Node {
   rclcpp::TimerBase::SharedPtr loop_timer_;
 
   TUI::Dashboard dash;
+  int update_time = 0;
   FSMState fsm_state = FSMState::PASSIVE;
   std::string state_string_ = "PASSIVE";
 
@@ -103,19 +104,17 @@ class MBFControl : public rclcpp::Node {
   bool in_transition_ = false;
   sensor_msgs::msg::Joy last_joy_msg_;
   bool first_joy_received_ = false;
-  bool prev_enable_btn_state_;
 
   void publishCommands();
 
   // Methods
-  bool toggle_state(bool current_state, int btn_idx,
-                    sensor_msgs::msg::Joy::SharedPtr msg);
   void begin_transition(const std::array<double, NUM_JOINTS>& target,
                         double duration);
   void run_interpolation(double dt, int dir);
   double smooth_ratio(double t, double T);
   void set_passive_commands();
   void compute_locomotion();
+  void update_dashboard();
 
  public:
   MBFControl();
