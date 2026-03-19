@@ -18,6 +18,10 @@ MBFControl::MBFControl()
       "joy", rclcpp::SensorDataQoS(),
       std::bind(&MBFControl::joyCallback, this, std::placeholders::_1));
 
+  imuSub = this->create_subscription<sensor_msgs::msg::Imu>(
+      "imu", rclcpp::SensorDataQoS(),
+      std::bind(&MBFControl::imuCallback, this, std::placeholders::_1));
+
   robotStateSub_ = this->create_subscription<robot_msgs::msg::RobotState>(
       "robot_controller/state", rclcpp::SensorDataQoS(),
       std::bind(&MBFControl::robotStateCallback, this, std::placeholders::_1));
@@ -29,6 +33,14 @@ MBFControl::MBFControl()
   std::string urdf;
 
   params.ctrl_freq = this->get_parameter("ctrl_freq").as_int();
+  params.rollPitchStab.roll_kp =
+      this->get_parameter("roll_pitch_stab.roll_kp").as_double();
+  params.rollPitchStab.roll_kd =
+      this->get_parameter("roll_pitch_stab.roll_kd").as_double();
+  params.rollPitchStab.pitch_kp =
+      this->get_parameter("roll_pitch_stab.pitch_kp").as_double();
+  params.rollPitchStab.pitch_kd =
+      this->get_parameter("roll_pitch_stab.pitch_kd").as_double();
   params.control.kp = this->get_parameter("control.kp").as_double();
   params.control.kd = this->get_parameter("control.kd").as_double();
   params.control.max_x = this->get_parameter("control.max_x").as_double();
@@ -153,6 +165,36 @@ void MBFControl::robotStateCallback(
   }
 }
 
+void MBFControl::imuCallback(sensor_msgs::msg::Imu::SharedPtr msg) {
+  imuData.orientation_.setX(msg->orientation.x);
+  imuData.orientation_.setY(msg->orientation.y);
+  imuData.orientation_.setZ(msg->orientation.z);
+  imuData.orientation_.setW(msg->orientation.w);
+
+  tf2::Matrix3x3 m(imuData.orientation_);
+  m.getRPY(imuData.roll, imuData.pitch, imuData.yaw);
+
+  double raw_wx = msg->angular_velocity.x;
+  double raw_wy = msg->angular_velocity.y;
+
+  // First run: initialize filter (avoid startup jump)
+  if (!imuData.imu_initialized_) {
+    imuData.roll_filt_ = imuData.roll;
+    imuData.pitch_filt_ = imuData.pitch;
+    imuData.wx_filt_ = raw_wx;
+    imuData.wy_filt_ = raw_wy;
+    imuData.imu_initialized_ = true;
+    return;
+  }
+
+  double alpha = 0.2;  // try 0.1 ~ 0.3
+
+  imuData.roll_filt_ = lowpass(imuData.roll, imuData.roll_filt_, alpha);
+  imuData.pitch_filt_ = lowpass(imuData.pitch, imuData.pitch_filt_, alpha);
+  imuData.wx_filt_ = lowpass(raw_wx, imuData.wx_filt_, alpha);
+  imuData.wy_filt_ = lowpass(raw_wy, imuData.wy_filt_, alpha);
+}
+
 void MBFControl::joyCallback(sensor_msgs::msg::Joy::SharedPtr msg) {
   req_pose_.position.x = 0.0;
   req_pose_.position.y = 0.0;
@@ -239,6 +281,25 @@ void MBFControl::set_passive_commands() {
   }
 }
 
+void MBFControl::compute_stab() {
+  double roll_err = req_pose_.orientation.roll - imuData.roll_filt_;
+  double roll_rate_err = 0 - imuData.wx_filt_;
+
+  double pitch_err = req_pose_.orientation.pitch - imuData.pitch_filt_;
+  double pitch_rate_err = 0 - imuData.wy_filt_;
+
+  double roll_cmd = req_pose_.orientation.roll;
+  double pitch_cmd = req_pose_.orientation.pitch;
+
+  req_pose_.orientation.roll =
+      roll_cmd + (params.rollPitchStab.roll_kp * roll_err +
+                  params.rollPitchStab.roll_kd * roll_rate_err);
+
+  req_pose_.orientation.pitch =
+      pitch_cmd + (params.rollPitchStab.pitch_kp * pitch_err +
+                   params.rollPitchStab.pitch_kd * pitch_rate_err);
+}
+
 void MBFControl::compute_locomotion() {
   float target_joint_positions[12];
   geometry::Transformation target_foot_positions[4];
@@ -322,6 +383,7 @@ void MBFControl::loop() {
 
     case FSMState::LOCOMOTION:
       state_string_ = "LOCOMOTION";
+      compute_stab();
       compute_locomotion();
 
       if (gamepadData.passive) {
@@ -370,8 +432,14 @@ void MBFControl::update_dashboard() {
                   std::array<double, 3>{req_vel_.linear.x, req_vel_.linear.y,
                                         req_vel_.angular.z},
                   TUI::RESET);
-
   dash.new_row();
+
+  std::vector<double> imu = {
+      rad2deg(imuData.roll),
+      rad2deg(imuData.pitch),
+      rad2deg(imuData.yaw),
+  };
+  dash.add_vector("imu", imu, TUI::RESET);
   dash.add_vector("Pose (x,y,z,r,p,y)",
                   std::array<double, 6>{
                       req_pose_.position.x, req_pose_.position.y,

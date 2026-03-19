@@ -1,13 +1,19 @@
 /**:
   ros__parameters:
     ctrl_freq: 200
+    roll_pitch_stab:
+      roll_kp: 0.25
+      roll_kd: 0.025
+
+      pitch_kp: 0.0
+      pitch_kd: 0.0
     
     # --- Control & Gains ---
     control:
       kp: 20.0
       kd: 0.5
-      standup_duration: 4.0
-      getdown_duration: 4.0
+      standup_duration: 2.0
+      getdown_duration: 2.0
       # Max limits for pose manipulation
       max_x: 0.05       # meters
       max_y: 0.05       # meters

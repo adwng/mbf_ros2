@@ -34,6 +34,20 @@ struct JointState {
   std::array<double, NUM_JOINTS> tau_est{};  // estimated torque (Nm)
 };
 
+struct ImuData {
+  tf2::Quaternion orientation_;
+  double roll, pitch, yaw;
+  double wx, wy, wz;
+  double ax, ay, az;
+
+  double roll_filt_ = 0.0;
+  double pitch_filt_ = 0.0;
+  double wx_filt_ = 0.0;
+  double wy_filt_ = 0.0;
+
+  bool imu_initialized_ = false;
+};
+
 struct JointCommand {
   std::array<double, NUM_JOINTS> q{};    // desired position
   std::array<double, NUM_JOINTS> dq{};   // desired velocity
@@ -76,14 +90,15 @@ class MBFControl : public rclcpp::Node {
 
   // subscribers and publishers' callbacks
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joySub;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub;
   rclcpp::Subscription<robot_msgs::msg::RobotState>::SharedPtr robotStateSub_;
   rclcpp::Publisher<robot_msgs::msg::RobotCommand>::SharedPtr robotCmdPub;
 
   void robotStateCallback(robot_msgs::msg::RobotState::SharedPtr msg);
   void joyCallback(sensor_msgs::msg::Joy::SharedPtr msg);
+  void imuCallback(sensor_msgs::msg::Imu::SharedPtr msg);
 
   //  ros2 node stuff
-  // rclcpp::Node::SharedPtr node_;
   rclcpp::TimerBase::SharedPtr loop_timer_;
 
   TUI::Dashboard dash;
@@ -94,6 +109,7 @@ class MBFControl : public rclcpp::Node {
   JointState jointStateData;
   JointCommand jointCommandData;
   GamePad_Data_t gamepadData;
+  ImuData imuData;
   Poses poses_;
 
   // Transition interpolation
@@ -114,7 +130,14 @@ class MBFControl : public rclcpp::Node {
   double smooth_ratio(double t, double T);
   void set_passive_commands();
   void compute_locomotion();
+  void compute_stab();
   void update_dashboard();
+
+  double lowpass(double x, double y_prev, double alpha) {
+    return alpha * x + (1.0 - alpha) * y_prev;
+  }
+
+  double rad2deg(double value) { return value * (180.0 / M_PI); }
 
  public:
   MBFControl();

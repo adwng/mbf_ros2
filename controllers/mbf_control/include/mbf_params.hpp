@@ -9,6 +9,11 @@ class Parameter_t {
  public:
   int ctrl_freq;
 
+  struct RollPitchStab {
+    double roll_kp, roll_kd;
+    double pitch_kp, pitch_kd;
+  } rollPitchStab;
+
   struct Control {
     double kp, kd;
     double standup_duration, getdown_duration;
