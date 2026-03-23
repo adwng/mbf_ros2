@@ -1,8 +1,3 @@
-#!/bin/bash
-
-# Source ROS 2 (change if needed)
-source /opt/ros/humble/setup.bash
-source ~/mbf_ws/install/setup.bash
 
 # Resolve paths
 BRINGUP_DIR=$(ros2 pkg prefix mbf_bringup)/share/mbf_bringup

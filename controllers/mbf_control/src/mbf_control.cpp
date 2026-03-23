@@ -19,7 +19,7 @@ MBFControl::MBFControl()
       std::bind(&MBFControl::joyCallback, this, std::placeholders::_1));
 
   imuSub = this->create_subscription<sensor_msgs::msg::Imu>(
-      "imu", rclcpp::SensorDataQoS(),
+      "imu/data", rclcpp::SensorDataQoS(),
       std::bind(&MBFControl::imuCallback, this, std::placeholders::_1));
 
   robotStateSub_ = this->create_subscription<robot_msgs::msg::RobotState>(

@@ -46,7 +46,7 @@ MBF_RL::MBF_RL(int argc, char **argv) {
       });
 
   this->imu_subscriber = node->create_subscription<sensor_msgs::msg::Imu>(
-      "imu", rclcpp::SystemDefaultsQoS(),
+      "imu/data", rclcpp::SystemDefaultsQoS(),
       [this](const sensor_msgs::msg::Imu::SharedPtr msg) {
         this->ImuCallback(msg);
       });
