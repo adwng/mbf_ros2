@@ -140,6 +140,7 @@ void MBF_RL::RobotControl() {
 
   this->StateController(&this->robot_state, &this->robot_command);
 
+  this->control.ClearInput();
   this->SetCommand(&this->robot_command);
 }
 

@@ -68,4 +68,107 @@
             </imu>
         </sensor>
     </gazebo>
+
+    <gazebo reference="chassis">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+
+    <gazebo reference="fl_shoulder_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+    </gazebo>
+    <gazebo reference="fl_hip_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+    <gazebo reference="fl_knee_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+    </gazebo>
+    <gazebo reference="fl_feet_link">
+        <mu1>0.6</mu1>
+        <mu2>0.6</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+
+    <gazebo reference="fr_shoulder_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+    </gazebo>
+    <gazebo reference="fr_hip_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+    <gazebo reference="fr_knee_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+    </gazebo>
+    <gazebo reference="fr_feet_link">
+        <mu1>0.6</mu1>
+        <mu2>0.6</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+
+    <gazebo reference="rl_shoulder_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+    </gazebo>
+    <gazebo reference="rl_hip_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+    <gazebo reference="rl_knee_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+    </gazebo>
+    <gazebo reference="rl_feet_link">
+        <mu1>0.6</mu1>
+        <mu2>0.6</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+
+    <gazebo reference="rr_shoulder_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+    </gazebo>
+    <gazebo reference="rr_hip_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
+    <gazebo reference="rr_knee_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>1</self_collide>
+    </gazebo>
+    <gazebo reference="rr_feet_link">
+        <mu1>0.6</mu1>
+        <mu2>0.6</mu2>
+        <self_collide>1</self_collide>
+        <kp value="1000000.0"/>
+        <kd value="1.0"/>
+    </gazebo>
 </robot>
