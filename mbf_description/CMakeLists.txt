@@ -4,7 +4,7 @@ project(mbf_description)
 find_package(ament_cmake REQUIRED)
 
 install(
-		DIRECTORY ros2_control meshes xacro launch config urdf rviz
+		DIRECTORY ros2_control meshes launch config urdf rviz xacro
 		DESTINATION share/${PROJECT_NAME}/
 )
 

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+    <name>mbf_rl</name>
+    <version>3.0.0</version>
+    <description>The mbf_rl package</description>
+
+    <maintainer email="andrewngcheewei@gmail.com">Andrew Ng</maintainer>
+
+    <license>Apache-2.0</license>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+    <depend>rclcpp</depend>
+    <depend>std_msgs</depend>
+    <depend>yaml-cpp</depend>
+    <depend>robot_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>controller_manager</depend>
+    <depend>joint_state_controller</depend>
+    <depend>robot_state_publisher</depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>

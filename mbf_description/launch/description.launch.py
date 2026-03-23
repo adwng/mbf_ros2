@@ -32,7 +32,7 @@ def generate_launch_description():
         PathJoinSubstitution([
             package_share_dir,
             "xacro",
-            "mbf.xacro"
+            "robot.xacro"
         ]),
         " use_sim:=",
         LaunchConfiguration("use_sim"),
