@@ -1,26 +1,26 @@
 /**:
   ros__parameters:
-    ctrl_freq: 200
+    ctrl_freq: 100
     roll_pitch_stab:
-      roll_kp: 0.25
-      roll_kd: 0.025
+      roll_kp: 0.0
+      roll_kd: 0.0
 
       pitch_kp: 0.0
       pitch_kd: 0.0
     
     # --- Control & Gains ---
     control:
-      kp: 20.0
-      kd: 0.5
+      kp: 30.0
+      kd: 1.0
       standup_duration: 2.0
       getdown_duration: 2.0
       # Max limits for pose manipulation
-      max_x: 0.05       # meters
-      max_y: 0.05       # meters
-      max_z: 0.03       # meters
+      max_x: 0.025       # meters
+      max_y: 0.025       # meters
+      max_z: 0.04       # meters
       max_roll: 0.25    # radians
       max_pitch: 0.25   # radians
-      max_yaw: 0.5     # radians
+      max_yaw: 1.5     # radians
     
     gamepad:
       # Buttons (Indexes)

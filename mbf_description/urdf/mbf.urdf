@@ -146,7 +146,7 @@
     <parent link="fl_hip_link"/>
     <child link="fl_knee_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="0" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-2.5" upper="0"/>
   </joint>
   <!-- Joint from shoulder to hip -->
   <joint name="fl_hip_joint" type="revolute">
@@ -154,7 +154,7 @@
     <parent link="fl_shoulder_link"/>
     <child link="fl_hip_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="2.5" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-1.5708" upper="3.5"/>
   </joint>
   <!-- Joint from chassis to shoulder -->
   <joint name="fl_shoulder_joint" type="revolute">
@@ -162,7 +162,7 @@
     <parent link="chassis"/>
     <child link="fl_shoulder_link"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10" velocity="10" lower="-2.0" upper="2.0"/>
+    <limit effort="10" velocity="10" lower="-1.0472" upper="1.0472"/>
   </joint>
   <!-- Link shoulder_2 -->
   <link name="fr_shoulder_link">
@@ -274,7 +274,7 @@
     <parent link="fr_hip_link"/>
     <child link="fr_knee_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="0" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-2.5" upper="0"/>
   </joint>
   <!-- Joint from shoulder_2 to hip_2 -->
   <joint name="fr_hip_joint" type="revolute">
@@ -282,7 +282,7 @@
     <parent link="fr_shoulder_link"/>
     <child link="fr_hip_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="2.5" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-1.5708" upper="3.5"/>
   </joint>
   <!-- Joint from chassis to shoulder_2 -->
   <joint name="fr_shoulder_joint" type="revolute">
@@ -290,7 +290,7 @@
     <parent link="chassis"/>
     <child link="fr_shoulder_link"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10" velocity="10" lower="-2.0" upper="2.0"/>
+    <limit effort="10" velocity="10" lower="-1.0472" upper="1.0472"/>
   </joint>
   <!-- Link shoulder_3 -->
   <link name="rl_shoulder_link">
@@ -402,7 +402,7 @@
     <parent link="rl_hip_link"/>
     <child link="rl_knee_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="0" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-2.5" upper="0"/>
   </joint>
   <!-- Joint from shoulder_3 to hip_3 -->
   <joint name="rl_hip_joint" type="revolute">
@@ -410,7 +410,7 @@
     <parent link="rl_shoulder_link"/>
     <child link="rl_hip_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="2.5" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-1.5708" upper="3.5"/>
   </joint>
   <!-- Joint from chassis to shoulder_3 -->
   <joint name="rl_shoulder_joint" type="revolute">
@@ -418,7 +418,7 @@
     <parent link="chassis"/>
     <child link="rl_shoulder_link"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10" velocity="10" lower="-2.0" upper="2.0"/>
+    <limit effort="10" velocity="10" lower="-1.0472" upper="1.0472"/>
   </joint>
   <!-- Link shoulder_4 -->
   <link name="rr_shoulder_link">
@@ -530,7 +530,7 @@
     <parent link="rr_hip_link"/>
     <child link="rr_knee_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="0" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-2.5" upper="0"/>
   </joint>
   <!-- Joint from shoulder_4 to hip_4 -->
   <joint name="rr_hip_joint" type="revolute">
@@ -538,7 +538,7 @@
     <parent link="rr_shoulder_link"/>
     <child link="rr_hip_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="10" upper="2.5" lower="-2.5"/>
+    <limit effort="10" velocity="10" lower="-1.5708" upper="3.5"/>
   </joint>
   <!-- Joint from chassis to shoulder_4 -->
   <joint name="rr_shoulder_joint" type="revolute">
@@ -546,6 +546,6 @@
     <parent link="chassis"/>
     <child link="rr_shoulder_link"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10" velocity="10" lower="-2.0" upper="2.0"/>
+    <limit effort="10" velocity="10" lower="-1.0472" upper="1.0472"/>
   </joint>
 </robot>

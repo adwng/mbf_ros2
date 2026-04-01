@@ -108,7 +108,7 @@ MBFControl::MBFControl()
   };
 
   std::array<double, NUM_JOINTS> STANDING_POSE = {
-      0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 0.8, -1.5,
+      0.0, 1.0, -1.7, 0.0, 1.0, -1.7, 0.0, 1.0, -1.7, 0.0, 1.0, -1.7,
   };
 
   poses_.passive = PASSIVE_POSES;
