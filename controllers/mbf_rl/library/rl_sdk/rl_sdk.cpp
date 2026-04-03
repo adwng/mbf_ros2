@@ -97,6 +97,22 @@ std::vector<float> RL::ComputeObservation() {
     } else if (observation == "actions") {
       obs_list.push_back(this->obs.actions);
     }
+    // ============= WTW Observations =============
+    else if (observation == "clock_sin") {
+      obs_list.push_back(this->obs.clock_sin);
+    } else if (observation == "clock_cos") {
+      obs_list.push_back(this->obs.clock_cos);
+    } else if (observation == "gait_period") {
+      obs_list.push_back(this->obs.gait_period_obs);
+    } else if (observation == "base_height") {
+      obs_list.push_back(this->obs.base_height_obs);
+    } else if (observation == "foot_clearance") {
+      obs_list.push_back(this->obs.foot_clearance_obs);
+    } else if (observation == "pitch") {
+      obs_list.push_back(this->obs.pitch_obs);
+    } else if (observation == "gait_theta") {
+      obs_list.push_back(this->obs.gait_theta);
+    }
   }
 
   this->obs_dims.clear();
@@ -125,6 +141,14 @@ void RL::InitObservations() {
   this->obs.dof_vel.resize(this->params.Get<int>("num_of_dofs"), 0.0f);
   this->obs.actions.clear();
   this->obs.actions.resize(this->params.Get<int>("num_of_dofs"), 0.0f);
+  // WTW obs (safe defaults; only consumed if listed in observations YAML)
+  this->obs.clock_sin = {0.0f, 0.0f, 0.0f, 0.0f};
+  this->obs.clock_cos = {1.0f, 1.0f, 1.0f, 1.0f};
+  this->obs.gait_period_obs = {0.5f};
+  this->obs.base_height_obs = {0.25f};
+  this->obs.foot_clearance_obs = {0.08f};
+  this->obs.pitch_obs = {0.0f};
+  this->obs.gait_theta = {0.0f, 0.5f, 0.5f, 0.0f};
   this->ComputeObservation();
 }
 

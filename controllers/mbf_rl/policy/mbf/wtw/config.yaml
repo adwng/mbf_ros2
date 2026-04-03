@@ -1,0 +1,130 @@
+# Walk These Ways (WTW) configuration for MBF
+# Reference: go2_deploy WTW implementation
+
+mbf/wtw:
+  model_name: "policy.pt"
+  num_observations: 61
+  observations: ["commands", "gravity_vec", "ang_vel", "dof_pos", "dof_vel", "actions",
+                 "clock_sin", "clock_cos", "gait_period", "base_height", "foot_clearance",
+                 "pitch", "gait_theta"]
+  # Frame stack: indices into history buffer (oldest to newest) to match WTW training order
+  observations_history: [4, 3, 2, 1, 0]
+  observations_history_priority: "time"
+  clip_obs: 100.0
+  clip_actions_lower: [-100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0]
+  clip_actions_upper: [100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0]
+  rl_kp: [20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0]
+  rl_kd: [0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5]
+  fixed_kp: [20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0]
+  fixed_kd: [0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5]
+  num_of_dofs: 12
+  action_scale: [0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25]
+  wheel_indices: []
+  lin_vel_scale: 1.0
+  ang_vel_scale: 0.25
+  dof_pos_scale: 1.0
+  dof_vel_scale: 0.05
+  commands_scale: [1.0, 1.0, 1.0]
+  torque_limits: [10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0]
+  default_dof_pos: [0.00, 0.80, -1.50,
+                    0.00, 0.80, -1.50,
+                    0.00, 0.80, -1.50,
+                    0.00, 0.80, -1.50]
+  joint_mapping: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+  # === WTW Gait Parameters ===
+  num_gaits: 4
+  # Phase offsets per leg for each gait preset:
+  #   Index 0: Trot    (diagonal pairs)
+  #   Index 1: Pronk   (all in phase)
+  #   Index 2: Pace    (lateral pairs)
+  #   Index 3: Bound   (front/back pairs)
+  theta_fl: [0.0, 0.0, 0.5, 0.0]
+  theta_fr: [0.5, 0.0, 0.0, 0.0]
+  theta_rl: [0.5, 0.0, 0.5, 0.5]
+  theta_rr: [0.0, 0.0, 0.0, 0.5]
+
+  # === WTW Style Parameter Ranges ===
+  gait_period_range: [0.3, 0.6]
+  base_height_range: [0.15, 0.30]
+  foot_clearance_range: [0.04, 0.12]
+  pitch_range: [-0.3, 0.3]
+
+  # Per-press adjustment step for style parameters
+  wtw_adjust_step: 0.01
+  # Cooldown cycles (at control rate) between discrete gait switches
+  gait_switch_cooldown: 100
+
+  # =================================================================
+  # Joystick Mapping — fully configurable gamepad
+  # =================================================================
+  #
+  # axes:
+  #   forward / lateral / yaw → index into joy_msg.axes[]
+  #
+  # buttons:
+  #   action_name → index into joy_msg.buttons[]
+  #   Set to -1 to disable a button action.
+  #
+  # axis_buttons:
+  #   action_name → [axis_index, direction]
+  #   Triggers when joy_msg.axes[axis_index] * direction > 0.5
+  #   Set to [-1, 0] to disable.
+  #
+  # An action fires if EITHER its button OR its axis_button triggers.
+  # You can define the same action in both sections for dual mapping.
+  #
+  # To find your controller's button/axis indices, run:
+  #   ros2 topic echo /joy
+  #
+  joy_mapping:
+    axes:
+      forward: 1          # Left stick Y
+      lateral: 0          # Left stick X
+      yaw: 3              # Right stick X
+
+    buttons:
+      # FSM transitions
+      getup: 0            # A
+      getdown: 1          # B
+      passive: 10         # Select / Back
+      locomotion: 11      # Start
+      nav_mode: 2         # X
+      # WTW discrete actions
+      gait_next: 4        # LB
+      gait_prev: 5        # RB
+
+    axis_buttons:
+      # WTW style — DPad (axes on Xbox-style controllers)
+      gait_period_up: [7, 1]       # DPad Up
+      gait_period_down: [7, -1]    # DPad Down
+      base_height_up: [6, -1]      # DPad Right
+      base_height_down: [6, 1]     # DPad Left
+      foot_clearance_up: [-1, 0]   # disabled
+      foot_clearance_down: [-1, 0] # disabled
+      pitch_up: [-1, 0]            # disabled
+      pitch_down: [-1, 0]          # disabled

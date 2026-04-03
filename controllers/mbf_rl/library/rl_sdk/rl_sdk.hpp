@@ -14,6 +14,7 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -165,6 +166,46 @@ enum class Gamepad {
   RB_DPadRight,
   LB_RB
 };
+inline Gamepad GamepadFromString(const std::string &name) {
+  static const std::map<std::string, Gamepad> table = {
+      {"None", Gamepad::None},
+      {"A", Gamepad::A},
+      {"B", Gamepad::B},
+      {"X", Gamepad::X},
+      {"Y", Gamepad::Y},
+      {"LB", Gamepad::LB},
+      {"RB", Gamepad::RB},
+      {"LStick", Gamepad::LStick},
+      {"RStick", Gamepad::RStick},
+      {"DPadUp", Gamepad::DPadUp},
+      {"DPadDown", Gamepad::DPadDown},
+      {"DPadLeft", Gamepad::DPadLeft},
+      {"DPadRight", Gamepad::DPadRight},
+      {"LB_A", Gamepad::LB_A},
+      {"LB_B", Gamepad::LB_B},
+      {"LB_X", Gamepad::LB_X},
+      {"LB_Y", Gamepad::LB_Y},
+      {"LB_LStick", Gamepad::LB_LStick},
+      {"LB_RStick", Gamepad::LB_RStick},
+      {"LB_DPadUp", Gamepad::LB_DPadUp},
+      {"LB_DPadDown", Gamepad::LB_DPadDown},
+      {"LB_DPadLeft", Gamepad::LB_DPadLeft},
+      {"LB_DPadRight", Gamepad::LB_DPadRight},
+      {"RB_A", Gamepad::RB_A},
+      {"RB_B", Gamepad::RB_B},
+      {"RB_X", Gamepad::RB_X},
+      {"RB_Y", Gamepad::RB_Y},
+      {"RB_LStick", Gamepad::RB_LStick},
+      {"RB_RStick", Gamepad::RB_RStick},
+      {"RB_DPadUp", Gamepad::RB_DPadUp},
+      {"RB_DPadDown", Gamepad::RB_DPadDown},
+      {"RB_DPadLeft", Gamepad::RB_DPadLeft},
+      {"RB_DPadRight", Gamepad::RB_DPadRight},
+      {"LB_RB", Gamepad::LB_RB},
+  };
+  auto it = table.find(name);
+  return (it != table.end()) ? it->second : Gamepad::None;
+}
 }  // namespace Input
 
 struct Control {
@@ -229,6 +270,14 @@ struct Observations {
   std::vector<T> dof_pos;
   std::vector<T> dof_vel;
   std::vector<T> actions;
+  // WTW (Walk These Ways) observation components
+  std::vector<T> clock_sin;
+  std::vector<T> clock_cos;
+  std::vector<T> gait_period_obs;
+  std::vector<T> base_height_obs;
+  std::vector<T> foot_clearance_obs;
+  std::vector<T> pitch_obs;
+  std::vector<T> gait_theta;
 };
 
 class RL {

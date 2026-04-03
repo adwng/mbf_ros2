@@ -177,6 +177,30 @@ if(NOT USE_CMAKE)
     )
 
     install(TARGETS mbf_rl DESTINATION lib/${PROJECT_NAME})
+
+    # Walk These Ways (WTW) standalone controller
+    add_executable(mbf_rl_wtw src/mbf_rl_wtw.cpp)
+
+    target_link_libraries(mbf_rl_wtw
+        rl_sdk
+        observation_buffer
+        ${YAML_CPP_LIBRARIES}
+        Threads::Threads
+    )
+
+    ament_target_dependencies(mbf_rl_wtw
+        joint_state_broadcaster
+        robot_state_publisher
+        rclcpp
+        std_msgs
+        robot_msgs
+        robot_joint_controller
+        rclpy
+        std_srvs
+        geometry_msgs
+    )
+
+    install(TARGETS mbf_rl_wtw DESTINATION lib/${PROJECT_NAME})
 endif()
 
 # Policy install --------------------------------------------------
