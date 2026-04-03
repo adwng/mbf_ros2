@@ -280,6 +280,19 @@ struct Observations {
   std::vector<T> gait_theta;
 };
 
+struct WTWState {
+  float gait_time = 0.0f;
+  float phi = 0.0f;
+  int gait_choice = 0;
+  float gait_period = 0.5f;
+  float base_height = 0.25f;
+  float foot_clearance = 0.08f;
+  float pitch = 0.0f;
+  int gait_switch_cooldown_counter = 0;
+  int gait_switch_cooldown_max = 100;
+  float adjust_step = 0.01f;
+};
+
 class RL {
  public:
   RL(){};
@@ -325,6 +338,19 @@ class RL {
   // control
   Control control;
   void KeyboardInterface();
+
+  // configurable keyboard mapping (used by WTW controller)
+  std::map<std::string, Input::Keyboard> key_mapping;
+  float vel_step = 0.1f;
+  void LoadKeyMapping();
+  bool IsActionActive(const std::string &action) const;
+  static Input::Keyboard KeyFromString(const std::string &s);
+
+  // WTW gait / style
+  WTWState wtw_state;
+  void InitWTWState();
+  void PreProcessGait();
+  void ProcessWTWControls();
 
   // history buffer
   ObservationBuffer history_obs_buf;

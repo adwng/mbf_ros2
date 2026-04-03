@@ -519,6 +519,181 @@ void RL::KeyboardInterface() {
   }
 }
 
+// =========================================================================
+// Configurable keyboard mapping
+// =========================================================================
+
+Input::Keyboard RL::KeyFromString(const std::string& s) {
+  if (s.size() == 1) {
+    char c = static_cast<char>(std::tolower(static_cast<unsigned char>(s[0])));
+    if (c >= 'a' && c <= 'z')
+      return static_cast<Input::Keyboard>(
+          static_cast<int>(Input::Keyboard::A) + (c - 'a'));
+    if (c >= '0' && c <= '9')
+      return static_cast<Input::Keyboard>(
+          static_cast<int>(Input::Keyboard::Num0) + (c - '0'));
+  }
+  if (s == "space") return Input::Keyboard::Space;
+  if (s == "enter") return Input::Keyboard::Enter;
+  if (s == "escape") return Input::Keyboard::Escape;
+  if (s == "up") return Input::Keyboard::Up;
+  if (s == "down") return Input::Keyboard::Down;
+  if (s == "left") return Input::Keyboard::Left;
+  if (s == "right") return Input::Keyboard::Right;
+  return Input::Keyboard::None;
+}
+
+void RL::LoadKeyMapping() {
+  YAML::Node node = this->params.config_node["key_mapping"];
+  if (!node || !node.IsMap()) {
+    std::cout << LOGGER::WARNING
+              << "No key_mapping in config, using defaults" << std::endl;
+    key_mapping["forward"] = Input::Keyboard::W;
+    key_mapping["backward"] = Input::Keyboard::S;
+    key_mapping["left"] = Input::Keyboard::A;
+    key_mapping["right"] = Input::Keyboard::D;
+    key_mapping["yaw_left"] = Input::Keyboard::Q;
+    key_mapping["yaw_right"] = Input::Keyboard::E;
+    key_mapping["stop"] = Input::Keyboard::Space;
+    key_mapping["getup"] = Input::Keyboard::Num0;
+    key_mapping["getdown"] = Input::Keyboard::Num9;
+    key_mapping["passive"] = Input::Keyboard::P;
+    key_mapping["locomotion"] = Input::Keyboard::Num1;
+    key_mapping["nav_mode"] = Input::Keyboard::N;
+    return;
+  }
+
+  for (auto it = node.begin(); it != node.end(); ++it) {
+    std::string action = it->first.as<std::string>();
+    std::string key_str = it->second.as<std::string>();
+    Input::Keyboard kb = KeyFromString(key_str);
+    if (kb != Input::Keyboard::None) {
+      key_mapping[action] = kb;
+    } else {
+      std::cout << LOGGER::WARNING << "Unknown key '" << key_str
+                << "' for action '" << action << "'" << std::endl;
+    }
+  }
+
+  vel_step = this->params.Get<float>("vel_step", 0.1f);
+
+  std::cout << LOGGER::INFO << "Key mapping loaded — "
+            << key_mapping.size() << " actions" << std::endl;
+}
+
+bool RL::IsActionActive(const std::string& action) const {
+  auto it = key_mapping.find(action);
+  if (it == key_mapping.end()) return false;
+  return this->control.current_keyboard == it->second;
+}
+
+// =========================================================================
+// WTW gait / style logic
+// =========================================================================
+
+void RL::InitWTWState() {
+  auto gp = this->params.Get<std::vector<float>>("gait_period_range");
+  auto bh = this->params.Get<std::vector<float>>("base_height_range");
+  auto fc = this->params.Get<std::vector<float>>("foot_clearance_range");
+  auto pr = this->params.Get<std::vector<float>>("pitch_range");
+
+  wtw_state.gait_period = gp[1];
+  wtw_state.base_height = bh[0];
+  wtw_state.foot_clearance = fc[0];
+  wtw_state.pitch = pr[1];
+  wtw_state.gait_time = 0.0f;
+  wtw_state.phi = 0.0f;
+  wtw_state.gait_choice = 0;
+  wtw_state.adjust_step = this->params.Get<float>("wtw_adjust_step", 0.01f);
+  wtw_state.gait_switch_cooldown_max =
+      this->params.Get<int>("gait_switch_cooldown", 100);
+  wtw_state.gait_switch_cooldown_counter = 0;
+
+  std::cout << LOGGER::INFO << "[WTW] Initialized — gaits: "
+            << this->params.Get<int>("num_gaits")
+            << ", period: " << wtw_state.gait_period << std::endl;
+}
+
+void RL::PreProcessGait() {
+  auto& ws = wtw_state;
+  float rl_dt =
+      this->params.Get<float>("dt") * this->params.Get<int>("decimation");
+
+  ws.gait_time += rl_dt;
+  if (ws.gait_time > (ws.gait_period - rl_dt / 2.0f)) ws.gait_time = 0.0f;
+  ws.phi = ws.gait_time / ws.gait_period;
+
+  auto tfl = this->params.Get<std::vector<float>>("theta_fl");
+  auto tfr = this->params.Get<std::vector<float>>("theta_fr");
+  auto trl = this->params.Get<std::vector<float>>("theta_rl");
+  auto trr = this->params.Get<std::vector<float>>("theta_rr");
+
+  std::vector<float> theta = {tfl[ws.gait_choice], tfr[ws.gait_choice],
+                               trl[ws.gait_choice], trr[ws.gait_choice]};
+
+  this->obs.clock_sin.resize(4);
+  this->obs.clock_cos.resize(4);
+  for (int i = 0; i < 4; ++i) {
+    float phase = 2.0f * static_cast<float>(M_PI) * (ws.phi + theta[i]);
+    this->obs.clock_sin[i] = std::sin(phase);
+    this->obs.clock_cos[i] = std::cos(phase);
+  }
+
+  this->obs.gait_period_obs = {ws.gait_period};
+  this->obs.base_height_obs = {ws.base_height};
+  this->obs.foot_clearance_obs = {ws.foot_clearance};
+  this->obs.pitch_obs = {ws.pitch};
+  this->obs.gait_theta = theta;
+}
+
+void RL::ProcessWTWControls() {
+  auto& ws = wtw_state;
+
+  auto gp = this->params.Get<std::vector<float>>("gait_period_range");
+  auto bh = this->params.Get<std::vector<float>>("base_height_range");
+  auto fc = this->params.Get<std::vector<float>>("foot_clearance_range");
+  auto pr = this->params.Get<std::vector<float>>("pitch_range");
+
+  if (IsActionActive("gait_period_up"))
+    ws.gait_period = std::min(ws.gait_period + ws.adjust_step, gp[1]);
+  else if (IsActionActive("gait_period_down"))
+    ws.gait_period = std::max(ws.gait_period - ws.adjust_step, gp[0]);
+
+  if (IsActionActive("base_height_up"))
+    ws.base_height = std::min(ws.base_height + ws.adjust_step, bh[1]);
+  else if (IsActionActive("base_height_down"))
+    ws.base_height = std::max(ws.base_height - ws.adjust_step, bh[0]);
+
+  if (IsActionActive("foot_clearance_up"))
+    ws.foot_clearance = std::min(ws.foot_clearance + ws.adjust_step, fc[1]);
+  else if (IsActionActive("foot_clearance_down"))
+    ws.foot_clearance = std::max(ws.foot_clearance - ws.adjust_step, fc[0]);
+
+  if (IsActionActive("pitch_up"))
+    ws.pitch = std::min(ws.pitch + ws.adjust_step, pr[1]);
+  else if (IsActionActive("pitch_down"))
+    ws.pitch = std::max(ws.pitch - ws.adjust_step, pr[0]);
+
+  if (ws.gait_switch_cooldown_counter > 0) {
+    --ws.gait_switch_cooldown_counter;
+  } else {
+    int ng = this->params.Get<int>("num_gaits");
+    if (IsActionActive("gait_next")) {
+      ws.gait_choice = (ws.gait_choice + 1) % ng;
+      ws.gait_switch_cooldown_counter = ws.gait_switch_cooldown_max;
+      std::cout << std::endl
+                << LOGGER::INFO << "[WTW] Gait -> " << ws.gait_choice
+                << std::endl;
+    } else if (IsActionActive("gait_prev")) {
+      ws.gait_choice = (ws.gait_choice - 1 + ng) % ng;
+      ws.gait_switch_cooldown_counter = ws.gait_switch_cooldown_max;
+      std::cout << std::endl
+                << LOGGER::INFO << "[WTW] Gait -> " << ws.gait_choice
+                << std::endl;
+    }
+  }
+}
+
 template <typename T>
 std::vector<T> ReadVectorFromYaml(const YAML::Node& node) {
   std::vector<T> values;
