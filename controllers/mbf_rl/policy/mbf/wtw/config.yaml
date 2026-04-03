@@ -79,52 +79,44 @@ mbf/wtw:
   # Cooldown cycles (at control rate) between discrete gait switches
   gait_switch_cooldown: 100
 
-  # =================================================================
-  # Joystick Mapping — fully configurable gamepad
-  # =================================================================
-  #
-  # axes:
-  #   forward / lateral / yaw → index into joy_msg.axes[]
-  #
-  # buttons:
-  #   action_name → index into joy_msg.buttons[]
-  #   Set to -1 to disable a button action.
-  #
-  # axis_buttons:
-  #   action_name → [axis_index, direction]
-  #   Triggers when joy_msg.axes[axis_index] * direction > 0.5
-  #   Set to [-1, 0] to disable.
-  #
-  # An action fires if EITHER its button OR its axis_button triggers.
-  # You can define the same action in both sections for dual mapping.
-  #
-  # To find your controller's button/axis indices, run:
-  #   ros2 topic echo /joy
-  #
-  joy_mapping:
-    axes:
-      forward: 1          # Left stick Y
-      lateral: 0          # Left stick X
-      yaw: 3              # Right stick X
+  # Velocity step per key press (hold key to accumulate)
+  vel_step: 0.1
 
-    buttons:
-      # FSM transitions
-      getup: 0            # A
-      getdown: 1          # B
-      passive: 10         # Select / Back
-      locomotion: 11      # Start
-      nav_mode: 2         # X
-      # WTW discrete actions
-      gait_next: 4        # LB
-      gait_prev: 5        # RB
+  # =================================================================
+  # Keyboard Mapping — every action is a single key
+  # =================================================================
+  # Values: single character "a"-"z", "0"-"9", or special names:
+  #   "space", "enter", "escape", "up", "down", "left", "right"
+  #
+  key_mapping:
+    # Velocity
+    forward: "w"
+    backward: "s"
+    left: "a"
+    right: "d"
+    yaw_left: "q"
+    yaw_right: "e"
+    stop: "space"
 
-    axis_buttons:
-      # WTW style — DPad (axes on Xbox-style controllers)
-      gait_period_up: [7, 1]       # DPad Up
-      gait_period_down: [7, -1]    # DPad Down
-      base_height_up: [6, -1]      # DPad Right
-      base_height_down: [6, 1]     # DPad Left
-      foot_clearance_up: [-1, 0]   # disabled
-      foot_clearance_down: [-1, 0] # disabled
-      pitch_up: [-1, 0]            # disabled
-      pitch_down: [-1, 0]          # disabled
+    # FSM transitions
+    getup: "0"
+    passive: "p"
+    locomotion: "1"
+    getdown: "9"
+
+    # Navigation mode toggle
+    nav_mode: "n"
+
+    # WTW gait switching
+    gait_next: "x"
+    gait_prev: "z"
+
+    # WTW style adjustments (hold to adjust continuously)
+    gait_period_up: "t"
+    gait_period_down: "g"
+    base_height_up: "y"
+    base_height_down: "h"
+    foot_clearance_up: "u"
+    foot_clearance_down: "j"
+    pitch_up: "i"
+    pitch_down: "k"

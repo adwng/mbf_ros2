@@ -3,7 +3,7 @@
 #include "fsm_wtw.hpp"
 
 // =========================================================================
-// MBF_RL_WTW — standalone Walk These Ways controller
+// MBF_RL_WTW — standalone Walk These Ways controller (keyboard only)
 // =========================================================================
 
 MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
@@ -12,10 +12,8 @@ MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
 
   robot_name = "mbf";
   this->ReadYaml(this->robot_name, "base.yaml");
-
-  // Pre-read WTW config for joy_mapping (model loading deferred to FSM enter)
   this->ReadYaml(this->robot_name + "/wtw", "config.yaml");
-  this->LoadJoyMapping();
+  this->LoadKeyMapping();
 
   int num_dofs = this->params.Get<int>("num_of_dofs");
   this->robot_command_pub_msg_.motor_command.resize(num_dofs);
@@ -24,7 +22,7 @@ MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
   this->InitOutputs();
   this->InitControl();
 
-  // Set up FSM manually
+  // FSM
   this->fsm.AddState(
       std::make_shared<wtw_fsm::StatePassive>(this, "Passive"));
   this->fsm.AddState(std::make_shared<wtw_fsm::StateGetUp>(this, "GetUp"));
@@ -34,7 +32,7 @@ MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
       std::make_shared<wtw_fsm::StateWTWLocomotion>(this, "WTWLocomotion"));
   this->fsm.SetInitialState("Passive");
 
-  // ROS2 pub/sub
+  // ROS2 pub/sub (no joy — keyboard only)
   this->robot_command_pub_ =
       node->create_publisher<robot_msgs::msg::RobotCommand>(
           "robot_controller/command", rclcpp::SystemDefaultsQoS());
@@ -45,12 +43,6 @@ MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
           [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
             this->cmd_vel_ = *msg;
           });
-
-  this->joy_sub_ = node->create_subscription<sensor_msgs::msg::Joy>(
-      "joy", rclcpp::SystemDefaultsQoS(),
-      [this](const sensor_msgs::msg::Joy::SharedPtr msg) {
-        this->joy_msg_ = *msg;
-      });
 
   this->imu_sub_ = node->create_subscription<sensor_msgs::msg::Imu>(
       "imu/data", rclcpp::SystemDefaultsQoS(),
@@ -65,7 +57,7 @@ MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
             this->robot_state_sub_msg_ = *msg;
           });
 
-  // Control loops
+  // Loops
   this->loop_control = std::make_shared<LoopFunc>(
       "loop_control", this->params.Get<float>("dt"),
       std::bind(&MBF_RL_WTW::RobotControl, this));
@@ -81,7 +73,7 @@ MBF_RL_WTW::MBF_RL_WTW(int argc, char **argv) {
       std::bind(&MBF_RL_WTW::KeyboardInterface, this));
   this->loop_keyboard->start();
 
-  std::cout << LOGGER::INFO << "MBF_RL_WTW start" << std::endl;
+  std::cout << LOGGER::INFO << "MBF_RL_WTW start (keyboard only)" << std::endl;
 }
 
 MBF_RL_WTW::~MBF_RL_WTW() {
@@ -92,68 +84,72 @@ MBF_RL_WTW::~MBF_RL_WTW() {
 }
 
 // =========================================================================
-// Joy mapping — fully configurable gamepad
+// Keyboard mapping — configurable via YAML
 // =========================================================================
 
-void MBF_RL_WTW::LoadJoyMapping() {
-  YAML::Node node = this->params.config_node["joy_mapping"];
+Input::Keyboard MBF_RL_WTW::KeyFromString(const std::string &s) {
+  if (s.size() == 1) {
+    char c = static_cast<char>(std::tolower(static_cast<unsigned char>(s[0])));
+    if (c >= 'a' && c <= 'z')
+      return static_cast<Input::Keyboard>(
+          static_cast<int>(Input::Keyboard::A) + (c - 'a'));
+    if (c >= '0' && c <= '9')
+      return static_cast<Input::Keyboard>(
+          static_cast<int>(Input::Keyboard::Num0) + (c - '0'));
+  }
+  if (s == "space") return Input::Keyboard::Space;
+  if (s == "enter") return Input::Keyboard::Enter;
+  if (s == "escape") return Input::Keyboard::Escape;
+  if (s == "up") return Input::Keyboard::Up;
+  if (s == "down") return Input::Keyboard::Down;
+  if (s == "left") return Input::Keyboard::Left;
+  if (s == "right") return Input::Keyboard::Right;
+  return Input::Keyboard::None;
+}
+
+void MBF_RL_WTW::LoadKeyMapping() {
+  YAML::Node node = this->params.config_node["key_mapping"];
   if (!node || !node.IsMap()) {
     std::cout << LOGGER::WARNING
-              << "[WTW] No joy_mapping in config, using defaults" << std::endl;
+              << "[WTW] No key_mapping in config, using defaults" << std::endl;
+    // Sensible defaults
+    key_mapping_["forward"] = Input::Keyboard::W;
+    key_mapping_["backward"] = Input::Keyboard::S;
+    key_mapping_["left"] = Input::Keyboard::A;
+    key_mapping_["right"] = Input::Keyboard::D;
+    key_mapping_["yaw_left"] = Input::Keyboard::Q;
+    key_mapping_["yaw_right"] = Input::Keyboard::E;
+    key_mapping_["stop"] = Input::Keyboard::Space;
+    key_mapping_["getup"] = Input::Keyboard::Num0;
+    key_mapping_["getdown"] = Input::Keyboard::Num9;
+    key_mapping_["passive"] = Input::Keyboard::P;
+    key_mapping_["locomotion"] = Input::Keyboard::Num1;
+    key_mapping_["nav_mode"] = Input::Keyboard::N;
     return;
   }
 
-  // Velocity axes
-  YAML::Node axes = node["axes"];
-  if (axes && axes.IsMap()) {
-    if (axes["forward"]) joy_mapping.axis_forward = axes["forward"].as<int>();
-    if (axes["lateral"]) joy_mapping.axis_lateral = axes["lateral"].as<int>();
-    if (axes["yaw"]) joy_mapping.axis_yaw = axes["yaw"].as<int>();
-  }
-
-  // Button-based actions: action_name → button index
-  YAML::Node buttons = node["buttons"];
-  if (buttons && buttons.IsMap()) {
-    for (auto it = buttons.begin(); it != buttons.end(); ++it) {
-      std::string action = it->first.as<std::string>();
-      int btn_idx = it->second.as<int>();
-      joy_mapping.actions[action].button = btn_idx;
+  for (auto it = node.begin(); it != node.end(); ++it) {
+    std::string action = it->first.as<std::string>();
+    std::string key_str = it->second.as<std::string>();
+    Input::Keyboard kb = KeyFromString(key_str);
+    if (kb != Input::Keyboard::None) {
+      key_mapping_[action] = kb;
+    } else {
+      std::cout << LOGGER::WARNING << "[WTW] Unknown key '" << key_str
+                << "' for action '" << action << "'" << std::endl;
     }
   }
 
-  // Axis-trigger actions: action_name → [axis_index, direction]
-  YAML::Node axis_buttons = node["axis_buttons"];
-  if (axis_buttons && axis_buttons.IsMap()) {
-    for (auto it = axis_buttons.begin(); it != axis_buttons.end(); ++it) {
-      std::string action = it->first.as<std::string>();
-      auto vec = it->second.as<std::vector<int>>();
-      if (vec.size() >= 2) {
-        joy_mapping.actions[action].axis = vec[0];
-        joy_mapping.actions[action].axis_dir = vec[1];
-      }
-    }
-  }
+  vel_step_ = this->params.Get<float>("vel_step", 0.1f);
 
-  std::cout << LOGGER::INFO << "[WTW] Joy mapping loaded — "
-            << joy_mapping.actions.size() << " actions configured" << std::endl;
+  std::cout << LOGGER::INFO << "[WTW] Key mapping loaded — "
+            << key_mapping_.size() << " actions" << std::endl;
 }
 
 bool MBF_RL_WTW::IsActionActive(const std::string &action) const {
-  auto it = joy_mapping.actions.find(action);
-  if (it == joy_mapping.actions.end()) return false;
-  const auto &ja = it->second;
-
-  if (ja.button >= 0 &&
-      ja.button < static_cast<int>(joy_msg_.buttons.size())) {
-    if (joy_msg_.buttons[ja.button]) return true;
-  }
-
-  if (ja.axis >= 0 && ja.axis < static_cast<int>(joy_msg_.axes.size())) {
-    float val = joy_msg_.axes[ja.axis] * static_cast<float>(ja.axis_dir);
-    if (val > 0.5f) return true;
-  }
-
-  return false;
+  auto it = key_mapping_.find(action);
+  if (it == key_mapping_.end()) return false;
+  return this->control.current_keyboard == it->second;
 }
 
 // =========================================================================
@@ -202,28 +198,28 @@ void MBF_RL_WTW::SetCommand(const RobotCommand<float> *command) {
 void MBF_RL_WTW::RobotControl() {
   this->GetState(&this->robot_state);
 
-  // Velocity from configurable axes
-  int af = joy_mapping.axis_forward;
-  int al = joy_mapping.axis_lateral;
-  int ay = joy_mapping.axis_yaw;
-  if (af >= 0 && af < static_cast<int>(joy_msg_.axes.size()))
-    this->control.x = joy_msg_.axes[af];
-  if (al >= 0 && al < static_cast<int>(joy_msg_.axes.size()))
-    this->control.y = joy_msg_.axes[al];
-  if (ay >= 0 && ay < static_cast<int>(joy_msg_.axes.size()))
-    this->control.yaw = joy_msg_.axes[ay];
+  // Velocity from configurable keyboard keys
+  auto kb = this->control.current_keyboard;
+  if (kb == key_mapping_["forward"])   this->control.x += vel_step_;
+  if (kb == key_mapping_["backward"])  this->control.x -= vel_step_;
+  if (kb == key_mapping_["left"])      this->control.y += vel_step_;
+  if (kb == key_mapping_["right"])     this->control.y -= vel_step_;
+  if (kb == key_mapping_["yaw_left"])  this->control.yaw += vel_step_;
+  if (kb == key_mapping_["yaw_right"]) this->control.yaw -= vel_step_;
+  if (kb == key_mapping_["stop"]) {
+    this->control.x = 0.0f;
+    this->control.y = 0.0f;
+    this->control.yaw = 0.0f;
+  }
 
-  // Nav mode toggle (edge-detected)
-  bool nav_now = IsActionActive("nav_mode");
-  if (nav_now && !nav_mode_prev_) {
+  if (IsActionActive("nav_mode")) {
     this->control.navigation_mode = !this->control.navigation_mode;
     std::cout << std::endl
               << LOGGER::INFO << "Navigation mode: "
               << (this->control.navigation_mode ? "ON" : "OFF") << std::endl;
   }
-  nav_mode_prev_ = nav_now;
 
-  // FSM + keyboard velocity (reuse base class for keyboard part)
+  // FSM
   auto updateFSMState = [&](std::shared_ptr<FSMState> statePtr) {
     if (auto s = std::dynamic_pointer_cast<RLFSMState>(statePtr)) {
       s->fsm_state = &this->robot_state;
@@ -234,31 +230,6 @@ void MBF_RL_WTW::RobotControl() {
 
   fsm.Run();
   this->motiontime++;
-
-  // Keyboard velocity adjustments (same as base RL::StateController)
-  if (this->control.current_keyboard == Input::Keyboard::W)
-    this->control.x += 0.1f;
-  if (this->control.current_keyboard == Input::Keyboard::S)
-    this->control.x -= 0.1f;
-  if (this->control.current_keyboard == Input::Keyboard::A)
-    this->control.y += 0.1f;
-  if (this->control.current_keyboard == Input::Keyboard::D)
-    this->control.y -= 0.1f;
-  if (this->control.current_keyboard == Input::Keyboard::Q)
-    this->control.yaw += 0.1f;
-  if (this->control.current_keyboard == Input::Keyboard::E)
-    this->control.yaw -= 0.1f;
-  if (this->control.current_keyboard == Input::Keyboard::Space) {
-    this->control.x = 0.0f;
-    this->control.y = 0.0f;
-    this->control.yaw = 0.0f;
-  }
-  if (this->control.current_keyboard == Input::Keyboard::N) {
-    this->control.navigation_mode = !this->control.navigation_mode;
-    std::cout << std::endl
-              << LOGGER::INFO << "Navigation mode: "
-              << (this->control.navigation_mode ? "ON" : "OFF") << std::endl;
-  }
 
   this->control.ClearInput();
   this->SetCommand(&this->robot_command);
@@ -416,7 +387,6 @@ void MBF_RL_WTW::ProcessWTWControls() {
   else if (IsActionActive("pitch_down"))
     ws.pitch = std::max(ws.pitch - ws.adjust_step, pr[0]);
 
-  // Discrete gait switching with cooldown
   if (ws.gait_switch_cooldown_counter > 0) {
     --ws.gait_switch_cooldown_counter;
   } else {
@@ -452,7 +422,7 @@ bool wtw_fsm::WTWFSMState::IsAction(const std::string &action) const {
 
 void wtw_fsm::StatePassive::Enter() {
   std::cout << LOGGER::NOTE
-            << "WTW Passive. Press configured 'getup' to stand." << std::endl;
+            << "WTW Passive. Press 'getup' key to stand." << std::endl;
 }
 
 void wtw_fsm::StatePassive::Run() {
@@ -467,10 +437,7 @@ void wtw_fsm::StatePassive::Run() {
 void wtw_fsm::StatePassive::Exit() {}
 
 std::string wtw_fsm::StatePassive::CheckChange() {
-  if (rl.control.current_keyboard == Input::Keyboard::Num0 ||
-      IsAction("getup")) {
-    return "GetUp";
-  }
+  if (IsAction("getup")) return "GetUp";
   return state_name_;
 }
 
@@ -511,18 +478,10 @@ void wtw_fsm::StateGetUp::Run() {
 void wtw_fsm::StateGetUp::Exit() {}
 
 std::string wtw_fsm::StateGetUp::CheckChange() {
-  if (rl.control.current_keyboard == Input::Keyboard::P ||
-      IsAction("passive")) {
-    return "Passive";
-  }
+  if (IsAction("passive")) return "Passive";
   if (percent_getup >= 1.0f) {
-    if (rl.control.current_keyboard == Input::Keyboard::Num1 ||
-        IsAction("locomotion")) {
-      return "WTWLocomotion";
-    } else if (rl.control.current_keyboard == Input::Keyboard::Num9 ||
-               IsAction("getdown")) {
-      return "GetDown";
-    }
+    if (IsAction("locomotion")) return "WTWLocomotion";
+    if (IsAction("getdown")) return "GetDown";
   }
   return state_name_;
 }
@@ -542,13 +501,8 @@ void wtw_fsm::StateGetDown::Run() {
 void wtw_fsm::StateGetDown::Exit() {}
 
 std::string wtw_fsm::StateGetDown::CheckChange() {
-  if (rl.control.current_keyboard == Input::Keyboard::P ||
-      IsAction("passive") || percent_getdown >= 1.0f) {
-    return "Passive";
-  } else if (rl.control.current_keyboard == Input::Keyboard::Num0 ||
-             IsAction("getup")) {
-    return "GetUp";
-  }
+  if (IsAction("passive") || percent_getdown >= 1.0f) return "Passive";
+  if (IsAction("getup")) return "GetUp";
   return state_name_;
 }
 
@@ -589,16 +543,9 @@ void wtw_fsm::StateWTWLocomotion::Run() {
 void wtw_fsm::StateWTWLocomotion::Exit() { rl.rl_init_done = false; }
 
 std::string wtw_fsm::StateWTWLocomotion::CheckChange() {
-  if (rl.control.current_keyboard == Input::Keyboard::P ||
-      IsAction("passive")) {
-    return "Passive";
-  } else if (rl.control.current_keyboard == Input::Keyboard::Num9 ||
-             IsAction("getdown")) {
-    return "GetDown";
-  } else if (rl.control.current_keyboard == Input::Keyboard::Num0 ||
-             IsAction("getup")) {
-    return "GetUp";
-  }
+  if (IsAction("passive")) return "Passive";
+  if (IsAction("getdown")) return "GetDown";
+  if (IsAction("getup")) return "GetUp";
   return state_name_;
 }
 

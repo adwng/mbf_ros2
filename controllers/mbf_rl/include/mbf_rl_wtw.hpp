@@ -9,7 +9,6 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
-#include <sensor_msgs/msg/joy.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -20,21 +19,6 @@
 #include "../library/rl_sdk/rl_sdk.hpp"
 #include "robot_msgs/msg/robot_command.hpp"
 #include "robot_msgs/msg/robot_state.hpp"
-
-// Per-action mapping: either a button index or an axis threshold trigger.
-// Both can be set simultaneously (action fires if either matches).
-struct JoyAction {
-  int button = -1;    // joy_msg.buttons[button], -1 = disabled
-  int axis = -1;      // joy_msg.axes[axis], -1 = disabled
-  int axis_dir = 0;   // 1 = positive, -1 = negative
-};
-
-struct JoyMapping {
-  int axis_forward = 1;
-  int axis_lateral = 0;
-  int axis_yaw = 3;
-  std::map<std::string, JoyAction> actions;
-};
 
 struct WTWState {
   float gait_time = 0.0f;
@@ -56,10 +40,9 @@ class MBF_RL_WTW : public RL {
 
   std::shared_ptr<rclcpp::Node> node;
 
-  // Joy action query — checks live joy_msg against mapping
+  // Keyboard action query — checks current_keyboard against key_mapping
   bool IsActionActive(const std::string &action) const;
 
-  JoyMapping joy_mapping;
   WTWState wtw_state;
 
   void InitWTWState();
@@ -73,27 +56,28 @@ class MBF_RL_WTW : public RL {
   void RunModel();
   void RobotControl();
 
-  void LoadJoyMapping();
+  void LoadKeyMapping();
+  static Input::Keyboard KeyFromString(const std::string &s);
+
+  // Configurable keyboard mapping: action name → Keyboard enum
+  std::map<std::string, Input::Keyboard> key_mapping_;
+  float vel_step_ = 0.1f;
 
   std::shared_ptr<LoopFunc> loop_keyboard;
   std::shared_ptr<LoopFunc> loop_control;
   std::shared_ptr<LoopFunc> loop_rl;
 
   sensor_msgs::msg::Imu imu_;
-  sensor_msgs::msg::Joy joy_msg_;
   geometry_msgs::msg::Twist cmd_vel_;
   robot_msgs::msg::RobotCommand robot_command_pub_msg_;
   robot_msgs::msg::RobotState robot_state_sub_msg_;
 
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
   rclcpp::Subscription<robot_msgs::msg::RobotState>::SharedPtr
       robot_state_sub_;
   rclcpp::Publisher<robot_msgs::msg::RobotCommand>::SharedPtr
       robot_command_pub_;
-
-  bool nav_mode_prev_ = false;
 };
 
 #endif  // MBF_RL_WTW_HPP
