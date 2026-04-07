@@ -145,8 +145,8 @@ void RL::InitObservations() {
   this->obs.clock_sin = {0.0f, 0.0f, 0.0f, 0.0f};
   this->obs.clock_cos = {1.0f, 1.0f, 1.0f, 1.0f};
   this->obs.gait_period_obs = {0.5f};
-  this->obs.base_height_obs = {0.25f};
-  this->obs.foot_clearance_obs = {0.08f};
+  this->obs.base_height_obs = {0.2f};
+  this->obs.foot_clearance_obs = {0.04f};
   this->obs.pitch_obs = {0.0f};
   this->obs.gait_theta = {0.0f, 0.5f, 0.5f, 0.0f};
   this->ComputeObservation();
@@ -600,7 +600,7 @@ void RL::InitWTWState() {
   wtw_state.gait_period = gp[1];
   wtw_state.base_height = bh[0];
   wtw_state.foot_clearance = fc[0];
-  wtw_state.pitch = pr[1];
+  wtw_state.pitch = 0.0f;
   wtw_state.gait_time = 0.0f;
   wtw_state.phi = 0.0f;
   wtw_state.gait_choice = 0;

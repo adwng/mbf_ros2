@@ -122,7 +122,7 @@ if __name__ == "__main__":
         torque_constant=0.47,
         current_limit=23.4,
         velocity_limit=30,
-        can_node_id=0,
+        can_node_id=3,
         can_baudrate=500000,
         enable_termination=False
     )

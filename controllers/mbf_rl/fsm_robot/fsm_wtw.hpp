@@ -147,6 +147,7 @@ class StateWTWLocomotion : public RLFSMState {
               << rl.control.x << " y:" << rl.control.y
               << " yaw:" << rl.control.yaw << " | gait:" << ws.gait_choice
               << " T:" << ws.gait_period << " h:" << ws.base_height
+              << " P:" << ws.pitch << "fc:" << ws.foot_clearance
               << std::flush;
 
     RLControl();

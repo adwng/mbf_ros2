@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 mbf/genesis:
-  model_name: "policy.pt"
+  model_name: "policy2.pt"
   num_observations: 45
   observations: ["commands", "gravity_vec", "ang_vel", "dof_pos", "dof_vel", "actions"]
   observations_history: []  # 0 is the latest observation

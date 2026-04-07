@@ -70,7 +70,7 @@ mbf/wtw:
 
   # === WTW Style Parameter Ranges ===
   gait_period_range: [0.3, 0.6]
-  base_height_range: [0.15, 0.30]
+  base_height_range: [0.15, 0.24]
   foot_clearance_range: [0.04, 0.12]
   pitch_range: [-0.3, 0.3]
 
