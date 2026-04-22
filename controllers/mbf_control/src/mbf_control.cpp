@@ -104,7 +104,7 @@ MBFControl::MBFControl()
   base_.setGaitConfig(gait_config_);
 
   std::array<double, NUM_JOINTS> PASSIVE_POSES = {
-      0.0, 0.6, -1.2, 0.0, 0.6, -1.2, 0.0, 0.6, -1.2, 0.0, 0.6, -1.2,
+      0.0, 1.2, -1.9, 0.0, 1.2, -1.9, 0.0, 1.2, -1.9, 0.0, 1.2, -1.9,
   };
 
   std::array<double, NUM_JOINTS> STANDING_POSE = {

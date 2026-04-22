@@ -93,6 +93,13 @@
         "variant": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.default.compileCommands": "/home/andrew/projects/mbf_ws/build/compile_commands.json",
+    "C_Cpp.default.compilerPath": "/home/andrew/projects/mbf_ws/.pixi/envs/default/bin/x86_64-conda-linux-gnu-c++",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.autocomplete": "default",
+    "C_Cpp.codeAnalysis.runAutomatically": true,
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.useBuildPath": true,
     "editor.formatOnSave": true,
     "clang-format.executable": "/usr/bin/clang-format",
     "python.analysis.autoImportCompletions": true,

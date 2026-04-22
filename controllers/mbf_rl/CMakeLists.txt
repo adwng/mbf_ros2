@@ -54,20 +54,68 @@ if(UPPER_BUILD_TYPE STREQUAL "DEBUG")
     add_compile_options(-g)
 endif()
 
-# Inference Runtime
-# LibTorch ONLY ---------------------------------------------------
-set(USE_TORCH "ON")
-set(LIBTORCH_DIR "$ENV{HOME}/libtorch")
+# Inference Runtime ------------------------------------------------
+# ONNX as default backend, Torch optional fallback.
+option(USE_ONNX "Enable ONNX Runtime backend" ON)
+option(USE_TORCH "Enable LibTorch backend" OFF)
+set(ONNX_RUNTIME_DIR "$ENV{HOME}/onnxruntime" CACHE PATH "Path to ONNX Runtime prebuilt directory")
+set(LIBTORCH_DIR "$ENV{HOME}/libtorch" CACHE PATH "Path to LibTorch prebuilt directory")
 
-if(EXISTS "${LIBTORCH_DIR}/include" AND EXISTS "${LIBTORCH_DIR}/lib")
-    message(STATUS "Found LibTorch at: ${LIBTORCH_DIR}")
+set(ONNX_RUNTIME_LIB "")
+if(USE_ONNX)
+    if(EXISTS "${ONNX_RUNTIME_DIR}/include" AND EXISTS "${ONNX_RUNTIME_DIR}/lib")
+        include_directories("${ONNX_RUNTIME_DIR}/include")
 
-    set(CMAKE_PREFIX_PATH "${LIBTORCH_DIR}")
-    find_package(Torch REQUIRED)
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(ONNX_LIB_CANDIDATES onnxruntime libonnxruntime.so onnxruntime.so)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+            set(ONNX_LIB_CANDIDATES onnxruntime libonnxruntime.dylib onnxruntime.dylib)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            set(ONNX_LIB_CANDIDATES onnxruntime onnxruntime.lib)
+        endif()
 
-    message(STATUS "LibTorch version: ${Torch_VERSION}")
-else()
-    message(FATAL_ERROR "LibTorch not found at ${LIBTORCH_DIR}")
+        find_library(ONNX_RUNTIME_LIB_PATH
+            NAMES ${ONNX_LIB_CANDIDATES}
+            PATHS "${ONNX_RUNTIME_DIR}/lib"
+            NO_DEFAULT_PATH
+        )
+
+        if(ONNX_RUNTIME_LIB_PATH)
+            if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+                add_library(onnxruntime_prebuilt STATIC IMPORTED GLOBAL)
+            else()
+                add_library(onnxruntime_prebuilt SHARED IMPORTED GLOBAL)
+            endif()
+            set_target_properties(onnxruntime_prebuilt PROPERTIES
+                IMPORTED_LOCATION "${ONNX_RUNTIME_LIB_PATH}"
+                INTERFACE_INCLUDE_DIRECTORIES "${ONNX_RUNTIME_DIR}/include"
+            )
+            set(ONNX_RUNTIME_LIB onnxruntime_prebuilt)
+            add_compile_definitions(USE_ONNX)
+            message(STATUS "Found ONNX Runtime at: ${ONNX_RUNTIME_DIR}")
+            message(STATUS "ONNX Runtime library: ${ONNX_RUNTIME_LIB_PATH}")
+        else()
+            message(FATAL_ERROR "ONNX Runtime enabled but library not found in ${ONNX_RUNTIME_DIR}/lib")
+        endif()
+    else()
+        message(FATAL_ERROR "ONNX Runtime enabled but not found at ${ONNX_RUNTIME_DIR}")
+    endif()
+endif()
+
+if(USE_TORCH)
+    if(EXISTS "${LIBTORCH_DIR}/include" AND EXISTS "${LIBTORCH_DIR}/lib")
+        message(STATUS "Found LibTorch at: ${LIBTORCH_DIR}")
+        set(CMAKE_PREFIX_PATH "${LIBTORCH_DIR};${CMAKE_PREFIX_PATH}")
+        find_package(Torch REQUIRED)
+        add_compile_definitions(USE_TORCH)
+        message(STATUS "LibTorch version: ${Torch_VERSION}")
+    else()
+        message(FATAL_ERROR "LibTorch enabled but not found at ${LIBTORCH_DIR}")
+    endif()
+endif()
+
+if(NOT USE_ONNX AND NOT USE_TORCH)
+    message(FATAL_ERROR "At least one inference backend must be enabled: USE_ONNX or USE_TORCH")
 endif()
 
 find_package(TBB REQUIRED)
@@ -79,6 +127,14 @@ if(Python3_LIBRARIES)
     get_filename_component(PYTHON_LIB_DIR "${Python3_LIBRARIES}" DIRECTORY)
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${PYTHON_LIB_DIR}")
     message(STATUS "Added Python library path to RPATH: ${PYTHON_LIB_DIR}")
+endif()
+if(USE_ONNX)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${ONNX_RUNTIME_DIR}/lib")
+    message(STATUS "Added ONNX Runtime path to RPATH: ${ONNX_RUNTIME_DIR}/lib")
+endif()
+if(USE_TORCH)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${LIBTORCH_DIR}/lib")
+    message(STATUS "Added LibTorch path to RPATH: ${LIBTORCH_DIR}/lib")
 endif()
 
 if(SYSTEM_TYPE STREQUAL "Linux")
@@ -119,10 +175,17 @@ include_directories(
     fsm_robot
 )
 
-# inference_runtime (Torch only) ---------------------------------
+# inference_runtime -----------------------------------------------
 add_library(inference_runtime library/inference_runtime/inference_runtime.cpp)
-target_link_libraries(inference_runtime PUBLIC ${TORCH_LIBRARIES} TBB::tbb Threads::Threads)
-target_compile_definitions(inference_runtime PRIVATE USE_TORCH)
+target_link_libraries(inference_runtime PUBLIC TBB::tbb Threads::Threads)
+if(USE_TORCH)
+    target_link_libraries(inference_runtime PUBLIC ${TORCH_LIBRARIES})
+    target_compile_definitions(inference_runtime PRIVATE USE_TORCH)
+endif()
+if(USE_ONNX)
+    target_link_libraries(inference_runtime PUBLIC ${ONNX_RUNTIME_LIB})
+    target_compile_definitions(inference_runtime PRIVATE USE_ONNX)
+endif()
 
 # rl_sdk core library --------------------------------------------
 add_library(rl_sdk library/rl_sdk/rl_sdk.cpp)
@@ -224,4 +287,10 @@ message(STATUS "USE_CMAKE: ${USE_CMAKE}")
 message(STATUS "----------------------------------------")
 message(STATUS "Backend Configuration:")
 message(STATUS "USE_TORCH: ${USE_TORCH}")
-message(STATUS "LibTorch version: ${Torch_VERSION}")
+message(STATUS "USE_ONNX: ${USE_ONNX}")
+if(USE_TORCH)
+    message(STATUS "LibTorch version: ${Torch_VERSION}")
+endif()
+if(USE_ONNX)
+    message(STATUS "ONNX Runtime dir: ${ONNX_RUNTIME_DIR}")
+endif()

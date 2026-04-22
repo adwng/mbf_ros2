@@ -19,7 +19,7 @@ MBF is a ROS 2 Humble workspace for a quadruped platform with:
 - ROS 2 Humble
 - Gazebo Classic (for simulation)
 - `ros2_control` and `ros2_controllers`
-- LibTorch (required by `controllers/mbf_rl`)
+- Onnx (required by `controllers/mbf_rl`)
 
 ## Features
 
@@ -41,15 +41,15 @@ Credit to [FanZiQi](https://github.com/fan-ziqi) for inspiration from `rl_sar`.
 
 ```bash
 cd ros2_ws
-git clone https://github.com/adwng/mbf_champ.git src
+git clone https://github.com/adwng/mbf_ros2.git src
 colcon build
 source install/setup.bash
 ```
 
-## LibTorch Requirement (RL)
+## Onnx Requirement (RL)
 
-`mbf_rl` expects LibTorch to be installed in `$HOME`.  
-If LibTorch is missing or in a different path, `controllers/mbf_rl` may fail to build.
+`mbf_rl` expects Onnxruntime to be installed in `$HOME` with folder name `onnxruntime/`.  
+If onnxruntime is missing or in a different path, `controllers/mbf_rl` may fail to build, can edit CmakeLists's Path.
 
 ## Running
 
@@ -74,14 +74,13 @@ For real robot operation, complete this checklist first.
 
 #### 1) Configure CAN Service (One-Time)
 
-Follow your CAN HAT vendor guide to enable CAN on Raspberry Pi and make it persistent at boot.
-If you keep helper scripts in `shfiles`, use them to install systemd startup units once.
+Follow your CAN HAT vendor guide to enable CAN on Raspberry Pi and make it persistent at boot. Helper scripts can be seen [here](/shfiles/). Do note that this depends on the can bus hat in use. 
 
 #### 2) Enable UART for IMU (If IMU Uses GPIO UART)
 
-If your IMU is connected through GPIO UART (instead of USB-UART):
+My IMU is connected through GPIO UART (instead of USB-UART):
 - enable serial/UART in Raspberry Pi configuration
-- add your user to `dialout`:
+- add user to `dialout`:
 
 ```bash
 sudo usermod -aG dialout $USER
@@ -97,7 +96,7 @@ ls -l /dev/serial*
 
 #### 3) Install and Run IMU Driver
 
-This project expects IMU data from an external IMU node.
+This project expects IMU data from an external IMU node. I am using the repository here as reference:
 
 ```bash
 cd ~/ros2_ws/src
@@ -140,7 +139,7 @@ Training is done outside this repo. One tested option:
 - [LeggedGym-Ex](https://github.com/lupinjia/LeggedGym-Ex)
 
 After training:
-- export/update the policy `.pt` file in the relevant `controllers/mbf_rl/policy/...` directory
+- export/update the policy `.onnx` file in the relevant `controllers/mbf_rl/policy/...` directory
 - update the matching `config.yaml`
 
 ## Bill of Materials (BOM)
@@ -154,6 +153,6 @@ After training:
 
 Current setup uses five 18650 cells in series (nominal 15 A output), assembled with spliceable battery slots.
 
-![Battery slot reference](docs/batteryslot.png)
-
+## Whaat if I want to use Libtorch?
+Just turn `USE_ONNX` off and `USE_TORCH` on during building for `mbf_rl`, but make sure you have the path to libtorch correct. I chose onnx because RPI4 don't support libtorch
 

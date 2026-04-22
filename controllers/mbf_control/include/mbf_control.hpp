@@ -6,8 +6,6 @@
 #include <champ/leg_controller/leg_controller.h>
 #include <champ/utils/urdf_loader.h>
 
-#include <vector>
-
 #include "TUI.hpp"
 #include "mbf_params.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -24,14 +22,14 @@
 
 static constexpr int NUM_JOINTS = 12;
 static constexpr int NUM_LEGS = 4;
-static constexpr int JOINTS = 3;  // JOINTS PER LEG
+static constexpr int JOINTS = 3; // JOINTS PER LEG
 
 enum class FSMState { PASSIVE, STANDUP, LOCOMOTION, GETDOWN };
 
 struct JointState {
-  std::array<double, NUM_JOINTS> q{};        // position (rad)
-  std::array<double, NUM_JOINTS> dq{};       // velocity (rad/s)
-  std::array<double, NUM_JOINTS> tau_est{};  // estimated torque (Nm)
+  std::array<double, NUM_JOINTS> q{};       // position (rad)
+  std::array<double, NUM_JOINTS> dq{};      // velocity (rad/s)
+  std::array<double, NUM_JOINTS> tau_est{}; // estimated torque (Nm)
 };
 
 struct ImuData {
@@ -49,11 +47,11 @@ struct ImuData {
 };
 
 struct JointCommand {
-  std::array<double, NUM_JOINTS> q{};    // desired position
-  std::array<double, NUM_JOINTS> dq{};   // desired velocity
-  std::array<double, NUM_JOINTS> kp{};   // proportional gain
-  std::array<double, NUM_JOINTS> kd{};   // derivative gain
-  std::array<double, NUM_JOINTS> tau{};  // feedforward torque
+  std::array<double, NUM_JOINTS> q{};   // desired position
+  std::array<double, NUM_JOINTS> dq{};  // desired velocity
+  std::array<double, NUM_JOINTS> kp{};  // proportional gain
+  std::array<double, NUM_JOINTS> kd{};  // derivative gain
+  std::array<double, NUM_JOINTS> tau{}; // feedforward torque
 };
 
 struct Poses {
@@ -124,7 +122,7 @@ class MBFControl : public rclcpp::Node {
   void publishCommands();
 
   // Methods
-  void begin_transition(const std::array<double, NUM_JOINTS>& target,
+  void begin_transition(const std::array<double, NUM_JOINTS> &target,
                         double duration);
   void run_interpolation(double dt, int dir);
   double smooth_ratio(double t, double T);
@@ -139,7 +137,7 @@ class MBFControl : public rclcpp::Node {
 
   double rad2deg(double value) { return value * (180.0 / M_PI); }
 
- public:
+public:
   MBFControl();
 };
 
