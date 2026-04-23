@@ -33,22 +33,22 @@
                 <param name="node_id">3</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
-                <param name="offset">0.524</param>
+                <param name="offset">-0.26</param>
                 <param name="axis_direction">-1</param>
             </joint>
             <joint name="fr_hip_joint">
                 <param name="node_id">4</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
-                <param name="offset">3.142</param>
-                <param name="axis_direction">1.0</param>
+                <param name="offset">-3.14</param>
+                <param name="axis_direction">1</param>
             </joint>
             <joint name="fr_knee_joint">
                 <param name="node_id">5</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
                 <param name="offset">2.5</param>
-                <param name="axis_direction">1.0</param>
+                <param name="axis_direction">1</param>
             </joint>
             <!-- <joint name="rl_shoulder_joint">
                 <param name="node_id">6</param>

@@ -54,6 +54,7 @@ struct Axis {
         node_id_(node_id),
         reduction_ratio_(1.0),
         auto_offset_(0.0),
+        manual_offset_rad_(0.0),
         offset_(0.0),
         axis_direction_(1) {}
 
@@ -65,6 +66,7 @@ struct Axis {
   uint32_t node_id_;
   double reduction_ratio_;
   int auto_offset_;
+  double manual_offset_rad_;
   double offset_;
   int axis_direction_;
   bool offset_initialized_ = false;
@@ -140,7 +142,8 @@ CallbackReturn RobotHardwareInterface::on_init(
       axis.reduction_ratio_ = std::stod(joint.parameters.at("reduction_ratio"));
     }
     if (joint.parameters.find("offset") != joint.parameters.end()) {
-      axis.offset_ = std::stod(joint.parameters.at("offset"));
+      // `offset` is configured in JOINT RADIANS.
+      axis.manual_offset_rad_ = std::stod(joint.parameters.at("offset"));
     }
     if (joint.parameters.find("axis_direction") != joint.parameters.end()) {
       axis.axis_direction_ = std::stoi(joint.parameters.at("axis_direction"));
@@ -148,6 +151,9 @@ CallbackReturn RobotHardwareInterface::on_init(
     if (joint.parameters.find("auto_offset") != joint.parameters.end()) {
       axis.auto_offset_ = std::stoi(joint.parameters.at("auto_offset"));
     }
+    // Internal storage uses motor turns.
+    axis.offset_ = (axis.manual_offset_rad_ * axis.reduction_ratio_) / (2 * M_PI) /
+                   axis.axis_direction_;
     axes_.push_back(axis);
   }
 
@@ -178,6 +184,13 @@ CallbackReturn RobotHardwareInterface::on_activate(const State&) {
 
   active_ = true;
 
+  // Reset encoder readiness on every activation so we always use fresh data.
+  for (auto& axis : axes_) {
+    axis.encoder_ready_ = false;
+    axis.pos_estimate_ = NAN;
+    axis.vel_estimate_ = NAN;
+  }
+
   // Wait briefly to collect initial encoder values
   RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
               "Waiting for encoder estimates...");
@@ -189,7 +202,7 @@ CallbackReturn RobotHardwareInterface::on_activate(const State&) {
 
     bool all_ready = true;
     for (auto& axis : axes_) {
-      if (!axis.encoder_ready_) {
+      if (axis.auto_offset_ == 1 && !axis.encoder_ready_) {
         all_ready = false;
         break;
       }
@@ -207,22 +220,55 @@ CallbackReturn RobotHardwareInterface::on_activate(const State&) {
   RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
               "Capturing startup encoder positions.");
 
+  bool auto_offset_failed = false;
   for (auto& axis : axes_) {
-    if (!std::isnan(axis.pos_estimate_) && axis.auto_offset_ == 1) {
-      // Convert joint radians back to motor turns
-      double motor_turns = (axis.pos_estimate_ * axis.reduction_ratio_) /
-                           (2 * M_PI) / axis.axis_direction_;
+    if (axis.auto_offset_ == 1) {
+      if (!std::isnan(axis.pos_estimate_)) {
+        // Convert joint radians back to motor turns.
+        // pos_estimate_ = (raw_turns - offset_) * scale
+        // => raw_turns = motor_turns_from_pos + offset_
+        const double motor_turns_from_pos =
+            (axis.pos_estimate_ * axis.reduction_ratio_) / (2 * M_PI) /
+            axis.axis_direction_;
+        const double startup_motor_turns = motor_turns_from_pos + axis.offset_;
+        const double manual_offset_turns =
+            (axis.manual_offset_rad_ * axis.reduction_ratio_) / (2 * M_PI) /
+            axis.axis_direction_;
 
-      axis.offset_ += motor_turns;
-      axis.offset_initialized_ = true;
+        // Deterministic rule:
+        // final offset = startup measured offset + configured manual trim.
+        axis.offset_ = startup_motor_turns + manual_offset_turns;
+        axis.offset_initialized_ = true;
 
-      RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
-                  "Axis %d offset set to %.6f turns", axis.node_id_,
-                  axis.offset_);
+        RCLCPP_INFO(
+            rclcpp::get_logger("RobotHardwareInterface"),
+            "Axis %d auto+manual offset -> startup: %.6f turns, manual: %.6f rad (%.6f turns), final: %.6f turns",
+            axis.node_id_, startup_motor_turns, axis.manual_offset_rad_,
+            manual_offset_turns, axis.offset_);
+      } else {
+        auto_offset_failed = true;
+        RCLCPP_ERROR(rclcpp::get_logger("RobotHardwareInterface"),
+                     "Axis %d encoder not ready. Auto offset failed.",
+                     axis.node_id_);
+      }
     } else {
-      RCLCPP_WARN(rclcpp::get_logger("RobotHardwareInterface"),
-                  "Axis %d encoder not ready. Offset not set.", axis.node_id_);
+      // Manual-only mode.
+      axis.offset_ =
+          (axis.manual_offset_rad_ * axis.reduction_ratio_) / (2 * M_PI) /
+          axis.axis_direction_;
+      axis.offset_initialized_ = true;
+      RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
+                  "Axis %d manual offset only: %.6f rad (%.6f turns)",
+                  axis.node_id_, axis.manual_offset_rad_, axis.offset_);
     }
+  }
+
+  // Avoid mixed/partial offsets that cause inconsistent posture.
+  if (auto_offset_failed) {
+    RCLCPP_ERROR(rclcpp::get_logger("RobotHardwareInterface"),
+                 "Activation aborted due to incomplete auto_offset data.");
+    active_ = false;
+    return CallbackReturn::ERROR;
   }
 
   for (auto& axis : axes_) {
@@ -341,10 +387,11 @@ return_type RobotHardwareInterface::write(const rclcpp::Time&,
 
     if (axis.pos_input_enabled_) {
       Set_Input_Pos_msg_t msg;
-      msg.Input_Pos =
-          (((axis.pos_setpoint_ + axis.offset_) * axis.reduction_ratio_) /
-           (2 * M_PI)) *
-          axis.axis_direction_;
+      // Convert joint command [rad] to motor turns, then apply motor-turn offset.
+      msg.Input_Pos = ((axis.pos_setpoint_ * axis.reduction_ratio_) /
+                       (2 * M_PI)) *
+                          axis.axis_direction_ +
+                      axis.offset_;
       msg.Vel_FF =
           axis.vel_input_enabled_
               ? ((axis.vel_setpoint_ * axis.reduction_ratio_) / (2 * M_PI)) *
