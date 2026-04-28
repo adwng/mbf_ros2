@@ -1,0 +1,209 @@
+<mujoco model="mbf">
+  <default>
+    <default class="robot">
+      <default class="hip_joint">
+        <joint armature="0.02" damping="2.0" />
+        <motor forcerange="-10.0 10.0" />
+      </default>
+      <default class="shoulder_joint">
+        <joint armature="0.02" damping="2.0" />
+        <motor forcerange="-10.0 10.0" />
+      </default>
+      <default class="knee_joint">
+        <joint armature="0.01" damping="1.5" />
+        <motor forcerange="-10.0 10.0" />
+      </default>
+      <default class="visual">
+        <geom contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom contype="0" conaffinity="1" group="3" />
+      </default>
+    </default>
+  </default>
+  <compiler angle="radian" meshdir="." balanceinertia="true" />
+  <asset>
+    <material name="chassis_material" rgba="0.615686 0.811765 0.929412 1" />
+    <material name="shoulder_material" rgba="0.74902 0.74902 0.74902 1" />
+    <mesh name="collision_chassis" file="meshes/meshes/chassis.stl" />
+    <mesh name="chassis_chassis" file="meshes/meshes/chassis.stl" />
+    <mesh name="collision_shoulder" file="meshes/meshes/shoulder.stl" />
+    <mesh name="fl_shoulder_link_shoulder" file="meshes/meshes/shoulder.stl" />
+    <mesh name="collision_hip" file="meshes/meshes/hip.stl" />
+    <mesh name="fl_hip_link_hip" file="meshes/meshes/hip.stl" />
+    <mesh name="collision_knee" file="meshes/meshes/knee.stl" />
+    <mesh name="fl_knee_link_knee" file="meshes/meshes/knee.stl" />
+    <mesh name="collision_feet" file="meshes/meshes/feet.stl" />
+    <mesh name="fl_feet_link_feet" file="meshes/meshes/feet.stl" />
+    <mesh name="fr_shoulder_link_shoulder" file="meshes/meshes/shoulder.stl" />
+    <mesh name="fr_hip_link_hip" file="meshes/meshes/hip.stl" />
+    <mesh name="fr_knee_link_knee" file="meshes/meshes/knee.stl" />
+    <mesh name="fr_feet_link_feet" file="meshes/meshes/feet.stl" />
+    <mesh name="rl_shoulder_link_shoulder" file="meshes/meshes/shoulder.stl" />
+    <mesh name="rl_hip_link_hip" file="meshes/meshes/hip.stl" />
+    <mesh name="rl_knee_link_knee" file="meshes/meshes/knee.stl" />
+    <mesh name="rl_feet_link_feet" file="meshes/meshes/feet.stl" />
+    <mesh name="rr_shoulder_link_shoulder" file="meshes/meshes/shoulder.stl" />
+    <mesh name="rr_hip_link_hip" file="meshes/meshes/hip.stl" />
+    <mesh name="rr_knee_link_knee" file="meshes/meshes/knee.stl" />
+    <mesh name="rr_feet_link_feet" file="meshes/meshes/feet.stl" />
+  </asset>
+  <actuator>
+    <motor name="fl_hip_joint" joint="fl_hip_joint" class="hip_joint" ctrlrange="-10.0 10.0" />
+    <motor name="fl_shoulder_joint" joint="fl_shoulder_joint" class="shoulder_joint" ctrlrange="-10.0 10.0" />
+    <motor name="fl_knee_joint" joint="fl_knee_joint" class="knee_joint" ctrlrange="-10.0 10.0" />
+    <motor name="fr_hip_joint" joint="fr_hip_joint" class="hip_joint" ctrlrange="-10.0 10.0" />
+    <motor name="fr_shoulder_joint" joint="fr_shoulder_joint" class="shoulder_joint" ctrlrange="-10.0 10.0" />
+    <motor name="fr_knee_joint" joint="fr_knee_joint" class="knee_joint" ctrlrange="-10.0 10.0" />
+    <motor name="rl_hip_joint" joint="rl_hip_joint" class="hip_joint" ctrlrange="-10.0 10.0" />
+    <motor name="rl_shoulder_joint" joint="rl_shoulder_joint" class="shoulder_joint" ctrlrange="-10.0 10.0" />
+    <motor name="rl_knee_joint" joint="rl_knee_joint" class="knee_joint" ctrlrange="-10.0 10.0" />
+    <motor name="rr_hip_joint" joint="rr_hip_joint" class="hip_joint" ctrlrange="-10.0 10.0" />
+    <motor name="rr_shoulder_joint" joint="rr_shoulder_joint" class="shoulder_joint" ctrlrange="-10.0 10.0" />
+    <motor name="rr_knee_joint" joint="rr_knee_joint" class="knee_joint" ctrlrange="-10.0 10.0" />
+  </actuator>
+  <sensor>
+    <framequat name="imu_quat" objtype="body" objname="imu_link" />
+    <framelinvel name="imu_linvel" objtype="body" objname="imu_link" />
+    <frameangvel name="imu_gyro" objtype="body" objname="imu_link" />
+    <jointpos name="fl_shoulder_joint_pos" joint="fl_shoulder_joint" />
+    <jointpos name="fl_hip_joint_pos" joint="fl_hip_joint" />
+    <jointpos name="fl_knee_joint_pos" joint="fl_knee_joint" />
+    <jointpos name="fr_shoulder_joint_pos" joint="fr_shoulder_joint" />
+    <jointpos name="fr_hip_joint_pos" joint="fr_hip_joint" />
+    <jointpos name="fr_knee_joint_pos" joint="fr_knee_joint" />
+    <jointpos name="rl_shoulder_joint_pos" joint="rl_shoulder_joint" />
+    <jointpos name="rl_hip_joint_pos" joint="rl_hip_joint" />
+    <jointpos name="rl_knee_joint_pos" joint="rl_knee_joint" />
+    <jointpos name="rr_shoulder_joint_pos" joint="rr_shoulder_joint" />
+    <jointpos name="rr_hip_joint_pos" joint="rr_hip_joint" />
+    <jointpos name="rr_knee_joint_pos" joint="rr_knee_joint" />
+    <jointvel name="fl_shoulder_joint_vel" joint="fl_shoulder_joint" />
+    <jointvel name="fl_hip_joint_vel" joint="fl_hip_joint" />
+    <jointvel name="fl_knee_joint_vel" joint="fl_knee_joint" />
+    <jointvel name="fr_shoulder_joint_vel" joint="fr_shoulder_joint" />
+    <jointvel name="fr_hip_joint_vel" joint="fr_hip_joint" />
+    <jointvel name="fr_knee_joint_vel" joint="fr_knee_joint" />
+    <jointvel name="rl_shoulder_joint_vel" joint="rl_shoulder_joint" />
+    <jointvel name="rl_hip_joint_vel" joint="rl_hip_joint" />
+    <jointvel name="rl_knee_joint_vel" joint="rl_knee_joint" />
+    <jointvel name="rr_shoulder_joint_vel" joint="rr_shoulder_joint" />
+    <jointvel name="rr_hip_joint_vel" joint="rr_hip_joint" />
+    <jointvel name="rr_knee_joint_vel" joint="rr_knee_joint" />
+    <jointactuatorfrc name="fl_shoulder_joint_torque" joint="fl_shoulder_joint" noise="0.01" />
+    <jointactuatorfrc name="fl_hip_joint_torque" joint="fl_hip_joint" noise="0.01" />
+    <jointactuatorfrc name="fl_knee_joint_torque" joint="fl_knee_joint" noise="0.01" />
+    <jointactuatorfrc name="fr_shoulder_joint_torque" joint="fr_shoulder_joint" noise="0.01" />
+    <jointactuatorfrc name="fr_hip_joint_torque" joint="fr_hip_joint" noise="0.01" />
+    <jointactuatorfrc name="fr_knee_joint_torque" joint="fr_knee_joint" noise="0.01" />
+    <jointactuatorfrc name="rl_shoulder_joint_torque" joint="rl_shoulder_joint" noise="0.01" />
+    <jointactuatorfrc name="rl_hip_joint_torque" joint="rl_hip_joint" noise="0.01" />
+    <jointactuatorfrc name="rl_knee_joint_torque" joint="rl_knee_joint" noise="0.01" />
+    <jointactuatorfrc name="rr_shoulder_joint_torque" joint="rr_shoulder_joint" noise="0.01" />
+    <jointactuatorfrc name="rr_hip_joint_torque" joint="rr_hip_joint" noise="0.01" />
+    <jointactuatorfrc name="rr_knee_joint_torque" joint="rr_knee_joint" noise="0.01" />
+  </sensor>
+  <worldbody>
+    <body name="base_link" childclass="robot" pos="0 0 0.2882">
+      <body name="chassis">
+        <inertial pos="0.00019173 0.000440232 -0.00216668" mass="2.0" diaginertia="0.00952998 0.0135426 0.0186649" />
+        <geom name="chassis_collision" type="mesh" mesh="collision_chassis" class="collision" />
+        <geom name="chassis_visual" type="mesh" mesh="chassis_chassis" material="chassis_material" class="visual" />
+        <body name="imu_link" />
+        <body name="fl_shoulder_link" pos="0.1695 0.045 0">
+          <inertial pos="-0.00572995 0.00737753 -1.10852e-06" mass="0.4" diaginertia="0.000212246 0.000383001 0.000318608" />
+          <joint name="fl_shoulder_joint" type="hinge" class="shoulder_joint" range="-1.0472 1.0472" axis="1 0 0" />
+          <geom name="fl_shoulder_link_collision" quat="0 -1 0 0" type="mesh" mesh="collision_shoulder" class="collision" />
+          <geom name="fl_shoulder_link_visual" quat="0 -1 0 0" type="mesh" mesh="fl_shoulder_link_shoulder" material="shoulder_material" class="visual" />
+          <body name="fl_hip_link" pos="0 0.081 -0">
+            <inertial pos="-0.000800701 -0.0108187 -0.0228388" mass="0.6" diaginertia="0.00131344 0.00134942 0.000412562" />
+            <joint name="fl_hip_joint" type="hinge" class="hip_joint" range="-1.5708 3.5" axis="0 1 0" />
+            <geom name="fl_hip_link_collision" quat="0.7071 0 0 0.7071" type="mesh" mesh="collision_hip" class="collision" />
+            <geom name="fl_hip_link_visual" quat="0.7071 0 0 0.7071" type="mesh" mesh="fl_hip_link_hip" material="shoulder_material" class="visual" />
+            <body name="fl_knee_link" pos="0 0 -0.12">
+              <inertial pos="0.000101397 0.000101309 -0.0636801" mass="0.15" diaginertia="0.000316741 0.000318933 1.8258e-05" />
+              <joint name="fl_knee_joint" type="hinge" class="knee_joint" range="-2.5 0" axis="0 1 0" />
+              <geom name="fl_knee_link_collision" quat="0.7071 0 0 -0.7071" type="mesh" mesh="collision_knee" class="collision" />
+              <geom name="fl_knee_link_visual" quat="0.7071 0 0 -0.7071" type="mesh" mesh="fl_knee_link_knee" material="chassis_material" class="visual" />
+              <body name="fl_feet_link" pos="-0.000288395 -0 -0.148233">
+                <inertial pos="0 -0 0" mass="0.025" diaginertia="4e-06 4e-06 4e-06" />
+                <geom name="fl_feet_link_collision" type="mesh" mesh="collision_feet" class="collision" />
+                <geom name="fl_feet_link_visual" type="mesh" mesh="fl_feet_link_feet" material="chassis_material" class="visual" />
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="fr_shoulder_link" pos="0.1695 -0.045 0">
+          <inertial pos="-0.00572995 -0.00737753 1.10852e-06" mass="0.4" diaginertia="0.000212246 0.000383001 0.000318608" />
+          <joint name="fr_shoulder_joint" type="hinge" class="shoulder_joint" range="-1.0472 1.0472" axis="1 0 0" />
+          <geom name="fr_shoulder_link_collision" type="mesh" mesh="collision_shoulder" class="collision" />
+          <geom name="fr_shoulder_link_visual" type="mesh" mesh="fr_shoulder_link_shoulder" material="shoulder_material" class="visual" />
+          <body name="fr_hip_link" pos="0 -0.081 0">
+            <inertial pos="0.000800701 0.0108187 -0.0228388" mass="0.6" diaginertia="0.00131344 0.00134942 0.000412562" />
+            <joint name="fr_hip_joint" type="hinge" class="hip_joint" range="-1.5708 3.5" axis="0 1 0" />
+            <geom name="fr_hip_link_collision" quat="0.7071 0 0 -0.7071" type="mesh" mesh="collision_hip" class="collision" />
+            <geom name="fr_hip_link_visual" quat="0.7071 0 0 -0.7071" type="mesh" mesh="fr_hip_link_hip" material="shoulder_material" class="visual" />
+            <body name="fr_knee_link" pos="0 0 -0.12">
+              <inertial pos="0.000101397 0.000101309 -0.0636801" mass="0.15" diaginertia="0.000316741 0.000318933 1.8258e-05" />
+              <joint name="fr_knee_joint" type="hinge" class="knee_joint" range="-2.5 0" axis="0 1 0" />
+              <geom name="fr_knee_link_collision" quat="0.7071 0 0 -0.7071" type="mesh" mesh="collision_knee" class="collision" />
+              <geom name="fr_knee_link_visual" quat="0.7071 0 0 -0.7071" type="mesh" mesh="fr_knee_link_knee" material="chassis_material" class="visual" />
+              <body name="fr_feet_link" pos="-0.000288395 -0 -0.148233">
+                <inertial pos="0 0 0" mass="0.025" diaginertia="4e-06 4e-06 4e-06" />
+                <geom name="fr_feet_link_collision" type="mesh" mesh="collision_feet" class="collision" />
+                <geom name="fr_feet_link_visual" type="mesh" mesh="fr_feet_link_feet" material="chassis_material" class="visual" />
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="rl_shoulder_link" pos="-0.1695 0.045 0">
+          <inertial pos="0.00572995 0.00737753 1.10852e-06" mass="0.4" diaginertia="0.000212246 0.000383001 0.000318608" />
+          <joint name="rl_shoulder_joint" type="hinge" class="shoulder_joint" range="-1.0472 1.0472" axis="1 0 0" />
+          <geom name="rl_shoulder_link_collision" quat="0 0 0 1" type="mesh" mesh="collision_shoulder" class="collision" />
+          <geom name="rl_shoulder_link_visual" quat="0 0 0 1" type="mesh" mesh="rl_shoulder_link_shoulder" material="shoulder_material" class="visual" />
+          <body name="rl_hip_link" pos="0 0.081 -0">
+            <inertial pos="-0.000800701 -0.0108187 -0.0228388" mass="0.6" diaginertia="0.00131344 0.00134942 0.000412562" />
+            <joint name="rl_hip_joint" type="hinge" class="hip_joint" range="-1.5708 3.5" axis="0 1 0" />
+            <geom name="rl_hip_link_collision" quat="0.7071 0 0 0.7071" type="mesh" mesh="collision_hip" class="collision" />
+            <geom name="rl_hip_link_visual" quat="0.7071 0 0 0.7071" type="mesh" mesh="rl_hip_link_hip" material="shoulder_material" class="visual" />
+            <body name="rl_knee_link" pos="0 0 -0.12">
+              <inertial pos="0.000101397 0.000101309 -0.0636801" mass="0.15" diaginertia="0.000316741 0.000318933 1.8258e-05" />
+              <joint name="rl_knee_joint" type="hinge" class="knee_joint" range="-2.5 0" axis="0 1 0" />
+              <geom name="rl_knee_link_collision" quat="0.7071 0 0 -0.7071" type="mesh" mesh="collision_knee" class="collision" />
+              <geom name="rl_knee_link_visual" quat="0.7071 0 0 -0.7071" type="mesh" mesh="rl_knee_link_knee" material="chassis_material" class="visual" />
+              <body name="rl_feet_link" pos="-0.000288395 -0 -0.148233">
+                <inertial pos="0 0 0" mass="0.025" diaginertia="4e-06 4e-06 4e-06" />
+                <geom name="rl_feet_link_collision" type="mesh" mesh="collision_feet" class="collision" />
+                <geom name="rl_feet_link_visual" type="mesh" mesh="rl_feet_link_feet" material="chassis_material" class="visual" />
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="rr_shoulder_link" pos="-0.1695 -0.045 0">
+          <inertial pos="0.00572995 -0.00737753 -1.10852e-06" mass="0.4" diaginertia="0.000212246 0.000383001 0.000318608" />
+          <joint name="rr_shoulder_joint" type="hinge" class="shoulder_joint" range="-1.0472 1.0472" axis="1 0 0" />
+          <geom name="rr_shoulder_link_collision" quat="0 0 1 0" type="mesh" mesh="collision_shoulder" class="collision" />
+          <geom name="rr_shoulder_link_visual" quat="0 0 1 0" type="mesh" mesh="rr_shoulder_link_shoulder" material="shoulder_material" class="visual" />
+          <body name="rr_hip_link" pos="0 -0.081 -0">
+            <inertial pos="0.000800701 0.0108187 -0.0228388" mass="0.6" diaginertia="0.00131344 0.00134942 0.000412562" />
+            <joint name="rr_hip_joint" type="hinge" class="hip_joint" range="-1.5708 3.5" axis="0 1 0" />
+            <geom name="rr_hip_link_collision" quat="0.7071 0 0 -0.7071" type="mesh" mesh="collision_hip" class="collision" />
+            <geom name="rr_hip_link_visual" quat="0.7071 0 0 -0.7071" type="mesh" mesh="rr_hip_link_hip" material="shoulder_material" class="visual" />
+            <body name="rr_knee_link" pos="0 0 -0.12">
+              <inertial pos="0.000101397 0.000101309 -0.0636801" mass="0.15" diaginertia="0.000316741 0.000318933 1.8258e-05" />
+              <joint name="rr_knee_joint" type="hinge" class="knee_joint" range="-2.5 0" axis="0 1 0" />
+              <geom name="rr_knee_link_collision" quat="0.7071 0 0 -0.7071" type="mesh" mesh="collision_knee" class="collision" />
+              <geom name="rr_knee_link_visual" quat="0.7071 0 0 -0.7071" type="mesh" mesh="rr_knee_link_knee" material="chassis_material" class="visual" />
+              <body name="rr_feet_link" pos="-0.000288395 -0 -0.148233">
+                <inertial pos="0 0 0" mass="0.025" diaginertia="4e-06 4e-06 4e-06" />
+                <geom name="rr_feet_link_collision" type="mesh" mesh="collision_feet" class="collision" />
+                <geom name="rr_feet_link_visual" type="mesh" mesh="rr_feet_link_feet" material="chassis_material" class="visual" />
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <freejoint name="floating_base" />
+    </body>
+  </worldbody>
+</mujoco>
