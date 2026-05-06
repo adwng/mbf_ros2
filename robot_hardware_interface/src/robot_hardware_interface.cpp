@@ -1,4 +1,3 @@
-
 #include "can_helpers.hpp"
 #include "can_simple_messages.hpp"
 #include "hardware_interface/system_interface.hpp"
@@ -114,6 +113,23 @@ struct Axis {
 
     can_intf_->send_can_frame(frame);
   }
+
+  // Send a Remote Transmission Request for a motor->host message, asking the
+  // ODrive to reply once with the corresponding data frame. Used for messages
+  // that the SteadyWin GIM6010-8 firmware does not broadcast cyclically (e.g.
+  // Get_Torques, 0x01C). The reply arrives as a normal data frame and is
+  // dispatched through Axis::on_can_msg by the standard receive path.
+  // If a particular firmware build does not honor RTR for a given cmd_id,
+  // fall back to RxSdo (0x004) reads using endpoint IDs from the firmware
+  // version's endpoints JSON.
+  template <typename TMsg>
+  void request() const {
+    struct can_frame frame {};
+    frame.can_id = (node_id_ << 5) | TMsg::cmd_id;
+    frame.can_id |= CAN_RTR_FLAG;
+    frame.can_dlc = TMsg::msg_length;
+    can_intf_->send_can_frame(frame);
+  }
 };
 
 }  // namespace robot_ros2_control
@@ -189,6 +205,8 @@ CallbackReturn RobotHardwareInterface::on_activate(const State&) {
     axis.encoder_ready_ = false;
     axis.pos_estimate_ = NAN;
     axis.vel_estimate_ = NAN;
+    axis.torque_target_ = NAN;
+    axis.torque_estimate_ = NAN;
   }
 
   // Wait briefly to collect initial encoder values
@@ -297,7 +315,7 @@ RobotHardwareInterface::export_state_interfaces() {
   for (size_t i = 0; i < info_.joints.size(); i++) {
     state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_EFFORT,
-        &axes_[i].torque_target_));
+        &axes_[i].torque_estimate_));
     state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_VELOCITY,
         &axes_[i].vel_estimate_));
@@ -374,7 +392,17 @@ return_type RobotHardwareInterface::read(const rclcpp::Time& timestamp,
   timestamp_ = timestamp;
 
   while (can_intf_.read_nonblocking()) {
-    // repeat until CAN interface has no more messages
+    // Drain inbound frames; this consumes replies to the previous cycle's
+    // Get_Torques RTRs as well as any cyclic encoder broadcasts.
+  }
+
+  // The SteadyWin GIM6010-8 firmware does not broadcast Get_Torques (0x01C)
+  // cyclically, so poll it via RTR every cycle. The device replies with a
+  // standard data frame which Axis::on_can_msg decodes on the next read().
+  if (active_) {
+    for (auto& axis : axes_) {
+      axis.request<Get_Torques_msg_t>();
+    }
   }
 
   return return_type::OK;

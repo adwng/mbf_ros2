@@ -278,6 +278,8 @@ struct Observations {
   std::vector<T> foot_clearance_obs;
   std::vector<T> pitch_obs;
   std::vector<T> gait_theta;
+
+  std::vector<T> gait_phase_obs;
 };
 
 struct WTWState {
@@ -331,6 +333,7 @@ class RL {
                      std::vector<float> &output_dof_pos,
                      std::vector<float> &output_dof_vel,
                      std::vector<float> &output_dof_tau);
+  void ComputeGaitPhase();
 
   // yaml params
   void ReadYaml(const std::string &file_path, const std::string &file_name);
@@ -352,11 +355,13 @@ class RL {
   void PreProcessGait();
   void ProcessWTWControls();
 
+  
   // history buffer
   ObservationBuffer history_obs_buf;
   std::vector<float> history_obs;
-
+  
   // others
+  float global_phase = 0.0f;
   int motiontime = 0;
   std::string robot_name, config_name;
   bool simulation_running = true;

@@ -112,6 +112,8 @@ std::vector<float> RL::ComputeObservation() {
       obs_list.push_back(this->obs.pitch_obs);
     } else if (observation == "gait_theta") {
       obs_list.push_back(this->obs.gait_theta);
+    } else if (observation == "period") {
+      obs_list.push_back(this->obs.gait_phase_obs);
     }
   }
 
@@ -149,6 +151,8 @@ void RL::InitObservations() {
   this->obs.foot_clearance_obs = {0.04f};
   this->obs.pitch_obs = {0.0f};
   this->obs.gait_theta = {0.0f, 0.5f, 0.5f, 0.0f};
+  this->obs.gait_phase_obs = {0.0f, 0.0f};
+  this->ComputeGaitPhase();
   this->ComputeObservation();
 }
 
@@ -235,6 +239,28 @@ void RL::ComputeOutput(const std::vector<float>& actions,
   output_dof_tau = clamp(output_dof_tau,
                          -this->params.Get<std::vector<float>>("torque_limits"),
                          this->params.Get<std::vector<float>>("torque_limits"));
+}
+
+void RL::ComputeGaitPhase() {
+  float period   = this->params.Get<float>("period");
+  float rl_dt    = this->params.Get<float>("dt") * this->params.Get<int>("decimation");
+  float delta_phase = rl_dt * (1.0f / period);  
+
+  this->global_phase += delta_phase;
+  this->global_phase = std::fmod(this->global_phase, 1.0f);
+
+  float angle = this->global_phase * 2.0f * static_cast<float>(M_PI);
+
+  float cx   = this->obs.commands[0];
+  float cy   = this->obs.commands[1];
+  float cyaw = this->obs.commands[2];
+  float cmd_norm = std::sqrt(cx*cx + cy*cy + cyaw*cyaw);
+
+  if (cmd_norm < 0.1f) {
+    this->obs.gait_phase_obs = {0.0f, 0.0f};
+  } else {
+    this->obs.gait_phase_obs = {std::sin(angle), std::cos(angle)};
+  }
 }
 
 int RL::InverseJointMapping(int idx) const {

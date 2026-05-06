@@ -231,6 +231,7 @@ void MBF_RL::RunModel() {
     this->episode_length_buf += 1;
     this->obs.ang_vel = this->robot_state.imu.gyroscope;
     this->obs.commands = {this->control.x, this->control.y, this->control.yaw};
+    this->ComputeGaitPhase();
     if (this->control.navigation_mode) {
       this->obs.commands = {(float)this->cmd_vel.linear.x,
                             (float)this->cmd_vel.linear.y,

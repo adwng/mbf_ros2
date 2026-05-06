@@ -106,5 +106,6 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true
-    }
+    },
+    "cmake.sourceDirectory": "/home/andrew/projects/mbf_ws/src/mbf_bringup"
 }
