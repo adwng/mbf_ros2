@@ -1,0 +1,222 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:unless value="$(arg use_sim)">
+        <ros2_control name="robot_hardware_interface" type="system">
+            <hardware>
+                <plugin>robot_ros2_control/RobotHardwareInterface</plugin>
+                <param name="logging">1</param>
+                <param name="can">can0</param>
+            </hardware>
+
+            <!-- <joint name="fl_shoulder_joint">
+                <param name="node_id">0</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="fl_hip_joint">
+                <param name="node_id">1</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="fl_knee_joint">
+                <param name="node_id">2</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint> -->
+            <joint name="fr_shoulder_joint">
+                <param name="node_id">3</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">-0.26</param>
+                <param name="axis_direction">-1</param>
+            </joint>
+            <joint name="fr_hip_joint">
+                <param name="node_id">4</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">-3.14</param>
+                <param name="axis_direction">1</param>
+            </joint>
+            <joint name="fr_knee_joint">
+                <param name="node_id">5</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">2.5</param>
+                <param name="axis_direction">1</param>
+            </joint>
+            <!-- <joint name="rl_shoulder_joint">
+                <param name="node_id">6</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="rl_hip_joint">
+                <param name="node_id">7</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="rl_knee_joint">
+                <param name="node_id">8</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="rr_shoulder_joint">
+                <param name="node_id">9</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="rr_hip_joint">
+                <param name="node_id">10</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint>
+            <joint name="rr_knee_joint">
+                <param name="node_id">11</param>
+                <param name="reduction_ratio">8.0</param>
+                <param name="auto_offset">1</param>
+                <param name="offset">0.0</param>
+                <param name="axis_direction">1.0</param>
+            </joint> -->
+        </ros2_control>
+
+    </xacro:unless>
+
+    <xacro:if value="$(arg use_sim)">
+        <ros2_control name="GazeboSystem" type="system">
+            <hardware>
+                <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+            </hardware>
+            <joint name="fl_shoulder_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="fl_hip_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="fl_knee_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="fr_shoulder_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="fr_hip_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="fr_knee_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="rl_shoulder_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="rl_hip_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="rl_knee_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="rr_shoulder_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="rr_hip_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+            <joint name="rr_knee_joint">
+                <command_interface name="effort">
+                    <param name="min">-10.0</param>
+                    <param name="max">10.0</param>
+                </command_interface>
+                <state_interface name="velocity"/>
+                <state_interface name="position"/>
+                <state_interface name="effort"/>
+            </joint>
+        </ros2_control>
+
+
+        <gazebo>
+            <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+                <parameters>$(find mbf_description)/config/ros2_control_sim.yaml</parameters>
+            </plugin>
+        </gazebo>
+    </xacro:if>
+
+</robot>

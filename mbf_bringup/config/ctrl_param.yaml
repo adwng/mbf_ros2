@@ -1,0 +1,43 @@
+/**:
+  ros__parameters:
+    ctrl_freq: 100
+    roll_pitch_stab:
+      roll_kp: 0.0
+      roll_kd: 0.0
+
+      pitch_kp: 0.0
+      pitch_kd: 0.0
+    
+    # --- Control & Gains ---
+    control:
+      kp: 30.0
+      kd: 1.0
+      standup_duration: 2.0
+      getdown_duration: 2.0
+      # Max limits for pose manipulation
+      max_x: 0.025       # meters
+      max_y: 0.025       # meters
+      max_z: 0.04       # meters
+      max_roll: 0.25    # radians
+      max_pitch: 0.25   # radians
+      max_yaw: 1.5     # radians
+    
+    gamepad:
+      # Buttons (Indexes)
+      passive_btn: 3      
+      stand_btn: 4        
+      locomotion_btn: 1   
+      down_btn: 0         
+      l_btn_macro: 6      
+      l2_btn_macro: 8     
+      r_btn_macro: 7      
+      
+      # Axes (Indexes)
+      left_ud_axis: 1     # Left Stick Up/Down
+      left_lr_axis: 0     # Left Stick Left/Right
+      right_ud_axis: 3    # Right Stick Up/Down
+      right_lr_axis: 2    # Right Stick Left/Right
+
+
+
+

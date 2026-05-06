@@ -1,0 +1,126 @@
+# Walk These Ways (WTW) configuration for MBF
+# Reference: go2_deploy WTW implementation
+
+mbf/wtw:
+<<<<<<< HEAD
+  model_name: "policy.onnx"
+=======
+  model_name: "policy.pt"
+>>>>>>> 3f57a92 (RPI Update)
+  num_observations: 61
+  observations: ["commands", "gravity_vec", "ang_vel", "dof_pos", "dof_vel", "actions",
+                 "clock_sin", "clock_cos", "gait_period", "base_height", "foot_clearance",
+                 "pitch", "gait_theta"]
+  # Frame stack: indices into history buffer (oldest to newest) to match WTW training order
+  observations_history: [4, 3, 2, 1, 0]
+  observations_history_priority: "time"
+  clip_obs: 100.0
+  clip_actions_lower: [-100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0]
+  clip_actions_upper: [100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0]
+  rl_kp: [20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0]
+  rl_kd: [0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5]
+  fixed_kp: [20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0]
+  fixed_kd: [0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5]
+  num_of_dofs: 12
+  action_scale: [0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25]
+  wheel_indices: []
+  lin_vel_scale: 1.0
+  ang_vel_scale: 0.25
+  dof_pos_scale: 1.0
+  dof_vel_scale: 0.05
+  commands_scale: [1.0, 1.0, 1.0]
+  torque_limits: [10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0]
+  default_dof_pos: [0.00, 0.80, -1.50,
+                    0.00, 0.80, -1.50,
+                    0.00, 0.80, -1.50,
+                    0.00, 0.80, -1.50]
+  joint_mapping: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+  # === WTW Gait Parameters ===
+  num_gaits: 4
+  # Phase offsets per leg for each gait preset:
+  #   Index 0: Trot    (diagonal pairs)
+  #   Index 1: Pronk   (all in phase)
+  #   Index 2: Pace    (lateral pairs)
+  #   Index 3: Bound   (front/back pairs)
+  theta_fl: [0.0, 0.0, 0.5, 0.0]
+  theta_fr: [0.5, 0.0, 0.0, 0.0]
+  theta_rl: [0.5, 0.0, 0.5, 0.5]
+  theta_rr: [0.0, 0.0, 0.0, 0.5]
+
+  # === WTW Style Parameter Ranges ===
+  gait_period_range: [0.3, 0.6]
+  base_height_range: [0.15, 0.24]
+  foot_clearance_range: [0.04, 0.12]
+  pitch_range: [-0.3, 0.3]
+
+  # Per-press adjustment step for style parameters
+  wtw_adjust_step: 0.01
+  # Cooldown cycles (at control rate) between discrete gait switches
+  gait_switch_cooldown: 100
+
+  # Velocity step per key press (hold key to accumulate)
+  vel_step: 0.1
+
+  # =================================================================
+  # Keyboard Mapping — every action is a single key
+  # =================================================================
+  # Values: single character "a"-"z", "0"-"9", or special names:
+  #   "space", "enter", "escape", "up", "down", "left", "right"
+  #
+  key_mapping:
+    # Velocity
+    forward: "w"
+    backward: "s"
+    left: "a"
+    right: "d"
+    yaw_left: "q"
+    yaw_right: "e"
+    stop: "space"
+
+    # FSM transitions
+    getup: "0"
+    passive: "p"
+    locomotion: "1"
+    getdown: "9"
+
+    # Navigation mode toggle
+    nav_mode: "n"
+
+    # WTW gait switching
+    gait_next: "x"
+    gait_prev: "z"
+
+    # WTW style adjustments (hold to adjust continuously)
+    gait_period_up: "t"
+    gait_period_down: "g"
+    base_height_up: "y"
+    base_height_down: "h"
+    foot_clearance_up: "u"
+    foot_clearance_down: "j"
+    pitch_up: "i"
+    pitch_down: "k"

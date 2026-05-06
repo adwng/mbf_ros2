@@ -1,0 +1,28 @@
+controller_manager:
+  ros__parameters:
+    use_sim_time: false
+    update_rate: 100 #Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+      
+    robot_controller:
+      type: robot_joint_controller/RobotJointControllerGroup
+
+robot_controller:
+  ros__parameters:
+    joints:
+      # - fl_shoulder_joint
+      # - fl_hip_joint
+      # - fl_knee_joint
+      - fr_shoulder_joint
+      - fr_hip_joint
+      - fr_knee_joint
+      # - rl_shoulder_joint
+      # - rl_hip_joint
+      # - rl_knee_joint
+      # - rr_shoulder_joint
+      # - rr_hip_joint
+      # - rr_knee_joint
+
+

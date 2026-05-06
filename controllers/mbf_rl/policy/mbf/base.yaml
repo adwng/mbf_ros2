@@ -1,0 +1,33 @@
+# Copyright (c) 2024-2025 Ziqi Fan
+# SPDX-License-Identifier: Apache-2.0
+
+mbf:
+  dt: 0.005
+  decimation: 4
+  fixed_kp: [20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0]
+  fixed_kd: [0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5]
+  num_of_dofs: 12
+  wheel_indices: []
+  torque_limits: [10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0]
+  default_dof_pos: [ 0.00, 0.80, -1.50,
+                     0.00, 0.80, -1.50,
+                     0.00, 0.80, -1.50,
+                     0.00, 0.80, -1.50]
+  joint_names: ["fl_shoulder_joint", "fl_hip_joint", "fl_knee_joint",
+                "fr_shoulder_joint", "fr_hip_joint", "fr_knee_joint",
+                "rl_shoulder_joint", "rl_hip_joint", "rl_knee_joint",
+                "rr_shoulder_joint", "rr_hip_joint", "rr_knee_joint"]
+  joint_controller_names: ["fl_shoulder_controller", "fl_hip_controller", "fl_knee_controller",
+                           "fr_shoulder_controller", "fr_hip_controller", "fr_knee_controller",
+                           "rl_shoulder_controller", "rl_hip_controller", "rl_knee_controller",
+                           "rr_shoulder_controller", "rr_hip_controller", "rr_knee_controller"]
+  joint_mapping: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+    <name>mbf_control</name>
+    <version>0.1.0</version>
+    <description>CHAMP ROS Hardware and Software Drivers</description>
+
+    <maintainer email="jimenojmm@gmail.com">Juan Miguel Jimeno</maintainer>
+    <author>Juan Miguel Jimeno</author>
+
+    <license>BSD</license>
+
+    <depend>rclcpp</depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+
+</package>
