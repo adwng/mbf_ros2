@@ -2,11 +2,7 @@
 # Reference: go2_deploy WTW implementation
 
 mbf/wtw:
-<<<<<<< HEAD
   model_name: "policy.onnx"
-=======
-  model_name: "policy.pt"
->>>>>>> 3f57a92 (RPI Update)
   num_observations: 61
   observations: ["commands", "gravity_vec", "ang_vel", "dof_pos", "dof_vel", "actions",
                  "clock_sin", "clock_cos", "gait_period", "base_height", "foot_clearance",

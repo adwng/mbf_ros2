@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "ROS 2 clang",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/**",
+                "/home/andrew/projects/mbf_ws/install/**",
+                "/home/andrew/projects/mbf_ws/.pixi/envs/default/include/**",
+                "/home/andrew/libtorch/**"
+            ],
+            "defines": [],
+            "compilerPath": "/home/andrew/projects/mbf_ws/.pixi/envs/default/bin/x86_64-conda-linux-gnu-c++",
+            "compileCommands": "/home/andrew/projects/mbf_ws/build/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
