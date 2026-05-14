@@ -162,7 +162,7 @@ public:
         rl.episode_length_buf = 0;
 
         // read params from yaml
-        rl.config_name = "mjlab";
+        rl.config_name = "legged_gym_ex";
         std::string robot_config_path = rl.robot_name + "/" + rl.config_name;
         try
         {
