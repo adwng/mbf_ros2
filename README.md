@@ -1,8 +1,6 @@
 # MBF Quadruped Stack
 
-<video width="640" height="360" controls>
-  <source src="docs/videos/working_rl.webm" type="video/webm">
-</video>
+![Watch the video](https://raw.githubusercontent.com/adwng/mbf_ros2/main/docs/videos/working_rl.webm)
 
 MBF is a ROS 2 Humble workspace for a quadruped platform with:
 - ros2_control-based hardware/simulation control
@@ -165,8 +163,6 @@ Just turn `USE_ONNX` off and `USE_TORCH` on during building for `mbf_rl`, but ma
 ## Newly Added Features
 
 ### State Estimator
-<video width="640" height="360" controls>
-  <source src="docs/videos/state_estimator.webm" type="video/webm">
-</video>
+![Watch the video](https://raw.githubusercontent.com/adwng/mbf_ros2/main/docs/videos/state_estimator.webm)
 
 The state estimator written here is not super accurate, but it can be used as an additional source in the future to fuse with other odometry algorithms such as PointLIO or LIOSAM for autonomous navigation stack
