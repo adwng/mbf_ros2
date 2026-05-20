@@ -1,0 +1,113 @@
+# mbf_estimator: 18-state linear KF base estimator.
+#
+# Inputs:  /imu/data, /joint_states, /state_estimator/contact_force_*_foot
+# Outputs: /state_estimator/odom, TF odom -> base_link
+#
+# Keep leg ordering and topic names in sync with
+# mbf_se_bridge/config/bridge.yaml.
+
+body_estimator:
+  ros__parameters:
+    use_sim_time: true
+
+    # ── I/O ───────────────────────────────────────────────────────────
+    joint_states_topic: /joint_states
+    imu_topic:          /imu/data
+    odom_topic:         /state_estimator/odom
+    odom_frame:         odom
+    base_frame:         base_link
+    publish_tf:         true
+    publish_debug:      true
+
+    # ── Contact detection: sigmoid p = σ((‖F‖ - center) / scale) ─────
+    # Continuous probability, not a Schmitt trigger. The gravity-only GRF
+    # estimator leaves ~3–6 N of phantom force on fast-swinging legs from
+    # unmodelled dynamics; a sigmoid down-weights those measurements via
+    # the KF's per-foot noise inflation rather than flapping a Boolean.
+    #
+    # Calibration from observed data on MBF:
+    #   stand          ~16–19 N per foot     ⇒ p ≈ 0.99
+    #   trot stance    ~20–60 N peaks         ⇒ p ≈ 1.0 (saturated)
+    #   trot swing     ~3–6 N (dynamics)      ⇒ p ≈ 0.10–0.25
+    # Centre at 10 N puts the swing-stance decision boundary halfway in
+    # between; scale of 3 N gives a fairly sharp transition.
+    contact_force_center: 15.0
+    contact_force_scale:   1.0
+
+    # Subtract g(q) from τ before solving F = J⁻ᵀ τ for the per-foot
+    # contact force. Strongly recommended: without this, swing-leg ||F||
+    # is dominated by leg weight and the sigmoid above cannot separate
+    # swing from stance. Turn off only if your upstream
+    # /joint_states.effort is already gravity-compensated.
+    gravity_compensate_grf: true
+
+    # Low-pass filter on contact_prob → trust ∈ [0, 1].
+    #
+    # This is the temporal-smoothing equivalent of MIT Cheetah's
+    # `trust_window = 0.2` ramp on gait phase, but applied to the
+    # force-based contact probability instead. It softens touchdown /
+    # liftoff transients before the signal reaches the KF — without it,
+    # a freshly-touched-down foot injects its swing-phase velocity into
+    # v_body for a few ms.
+    #
+    # Pick tau as a few control periods. 0.05 s on a 200 Hz controller
+    # gives a ~50 ms (10-sample) ramp, which empirically smooths
+    # touchdown without lagging steady-state contact transitions.
+    lp_tau:                0.005
+
+    imu_timeout:           0.1
+
+    # ── KF tuning ─────────────────────────────────────────────────────
+    # sigma_acc is the dominant trust knob: lower = trust the IMU integral
+    # more (snappier velocity, more drift); higher = trust kinematics more.
+    kf.sigma_acc:             0.5
+    kf.sigma_foot_pos_stance: 0.002
+
+    # Measurement noise std-devs (nominal, full-trust case).
+    #
+    # The position residual is ALWAYS applied at this noise — it's a
+    # kinematic identity that holds regardless of contact state. Vel and
+    # height residuals are gated by `trust` via measurement blending plus
+    # multiplicative R inflation (see kf.swing_inflate).
+    kf.sigma_meas_pos:        0.005
+    kf.sigma_meas_vel:        0.02
+    kf.sigma_meas_height:     0.005
+
+    # MIT's "high_suspect_number". Multiplicative inflation factor
+    # applied to (a) per-foot Q for foot-position process noise and
+    # (b) per-foot R for vel and height blocks. Applied as
+    #   factor = 1 + (1 - trust) * swing_inflate.
+    #
+    # 100 is MIT's tested value. The position residual block is NOT
+    # inflated — it's always trusted because foot-relative-to-body
+    # geometry is a kinematic fact, not a contact assumption.
+    kf.swing_inflate:       100.0
+
+    # World-z assumed for the contact point. The URDF's foot frame
+    # (*_feet_link) is typically at the ankle; the actual contact point
+    # is below by the foot's collision radius. If the estimated p_body.z
+    # at quiet stand differs from your URDF nominal height by ~1–3 cm,
+    # nudge this until they match. Positive raises the assumed contact
+    # plane (and therefore p_body.z), negative lowers it.
+    kf.foot_height_offset:    0.0
+
+    kf.gravity_z:            -9.81
+
+    # ── Leg / foot map (must match bridge.yaml) ───────────────────────
+    leg_names: [lf, rf, lh, rh]
+
+    leg_lf.joints:         [fl_shoulder_joint, fl_hip_joint, fl_knee_joint]
+    leg_lf.foot_frame:     fl_feet_link
+    leg_lf.contact_topic:  /state_estimator/contact_force_lf_foot
+
+    leg_rf.joints:         [fr_shoulder_joint, fr_hip_joint, fr_knee_joint]
+    leg_rf.foot_frame:     fr_feet_link
+    leg_rf.contact_topic:  /state_estimator/contact_force_rf_foot
+
+    leg_lh.joints:         [rl_shoulder_joint, rl_hip_joint, rl_knee_joint]
+    leg_lh.foot_frame:     rl_feet_link
+    leg_lh.contact_topic:  /state_estimator/contact_force_lh_foot
+
+    leg_rh.joints:         [rr_shoulder_joint, rr_hip_joint, rr_knee_joint]
+    leg_rh.foot_frame:     rr_feet_link
+    leg_rh.contact_topic:  /state_estimator/contact_force_rh_foot

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mbf_estimator</name>
+  <version>0.1.0</version>
+  <description>
+    Linear Kalman filter base-state estimator for the MBF quadruped.
+
+    Fuses IMU (orientation + linear acceleration + angular velocity) with
+    leg kinematics (sensor_msgs/JointState reordered via Pinocchio) and
+    per-foot contact estimates (geometry_msgs/WrenchStamped from
+    mbf_se_bridge/grf_estimator) to produce base pose and twist in world.
+
+    18-state filter following the MIT Cheetah-Software / legged_control
+    formulation:
+        x = [ p_body(3); v_body(3); p_foot[0..3](3) ]   (all in world)
+    Body orientation is taken directly from sensor_msgs/Imu and is not
+    part of the filter state.
+
+    Same node runs unmodified in Gazebo and on real hardware — the inputs
+    (/joint_states, /imu/data, contact wrenches) are the same in both.
+  </description>
+  <maintainer email="andrewngcheewei@gmail.com">Andrew Ng</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>eigen3_cmake_module</depend>
+  <depend>eigen</depend>
+  <depend>pinocchio</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

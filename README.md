@@ -1,5 +1,9 @@
 # MBF Quadruped Stack
 
+<video width="640" height="360" controls>
+  <source src="docs/videos/working_rl.webm" type="video/webm">
+</video>
+
 MBF is a ROS 2 Humble workspace for a quadruped platform with:
 - ros2_control-based hardware/simulation control
 - CHAMP-based locomotion control
@@ -13,6 +17,7 @@ MBF is a ROS 2 Humble workspace for a quadruped platform with:
 - `controllers/mbf_control`: joystick + locomotion + stabilization controller
 - `controllers/mbf_rl`: RL runtime controller and policy integration
 - `robot_joint_controller`: per-joint low-level torque/PD controller plugin
+- `mbf_estimator`: Kalman Filter based State Estimator using joint data, estimated feet forces, and imu data
 
 ## Dependencies
 
@@ -20,6 +25,7 @@ MBF is a ROS 2 Humble workspace for a quadruped platform with:
 - Gazebo Classic (for simulation)
 - `ros2_control` and `ros2_controllers`
 - Onnx (required by `controllers/mbf_rl`)
+- pinnochio
 
 ## Features
 
@@ -132,7 +138,7 @@ Recommended startup order on real hardware:
 4. controller process (`./src/shfiles/run_controller.sh`)
 5. optional RL controller (`./src/shfiles/run_rl_controller.sh`)
 6. gamepad node/client (`./src/shfiles/gamepad.sh`)
-
+7. If want to run state estimator (`ros2 launch mbf_estimator estimator.launch.py`)
 ## Training a New Policy
 
 Training is done outside this repo. One tested option:
@@ -156,3 +162,11 @@ Current setup uses five 18650 cells in series (nominal 15 A output), assembled w
 ## Whaat if I want to use Libtorch?
 Just turn `USE_ONNX` off and `USE_TORCH` on during building for `mbf_rl`, but make sure you have the path to libtorch correct. I chose onnx because RPI4 don't support libtorch
 
+## Newly Added Features
+
+### State Estimator
+<video width="640" height="360" controls>
+  <source src="docs/videos/state_estimator.webm" type="video/webm">
+</video>
+
+The state estimator written here is not super accurate, but it can be used as an additional source in the future to fuse with other odometry algorithms such as PointLIO or LIOSAM for autonomous navigation stack
