@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 mbf:
+  rl_config: mjlab
   dt: 0.005
   decimation: 4
   fixed_kp: [20.0, 20.0, 20.0,

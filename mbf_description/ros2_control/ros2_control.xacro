@@ -5,6 +5,7 @@
             <hardware>
                 <plugin>robot_ros2_control/RobotHardwareInterface</plugin>
                 <param name="logging">1</param>
+                <param name="read_torques">0</param>
                 <param name="can">can0</param>
             </hardware>
 

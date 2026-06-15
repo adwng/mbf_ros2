@@ -1,0 +1,65 @@
+# UniLab MbfWalkRough policy (PPO / MLX PPO), exported to ONNX.
+#
+# Observation (45) — matches unilab/envs/locomotion/mbf/rough.py _compute_obs:
+#   ang_vel*0.25(3) + gravity_upvector(3) + commands(3) + (dof_pos-default)(12)
+#   + dof_vel*0.05(12) + actions(12)
+# Note the order (commands come BEFORE dof_pos here) and the 0.25 / 0.05 scales,
+# which differ from the flat task. There is no feet_phase term in rough.
+# Drop the exported policy in this folder as policy.onnx, then set
+# `rl_config: unilab_rough` in policy/mbf/base.yaml.
+
+mbf/unilab_rough:
+  model_name: "policy.onnx"
+  num_observations: 45
+  observations: ["ang_vel", "gravity_upvector", "commands", "dof_pos", "dof_vel", "actions"]
+  observations_history: []
+  observations_history_priority: "time"
+  clip_obs: 100.0
+
+  # Rough policy clips actions to +/-100 (RoughControlConfig.clip_actions).
+  clip_actions_lower: []
+  clip_actions_upper: []
+
+  num_of_dofs: 12
+  wheel_indices: []
+  joint_mapping: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+  rl_kp: [20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0]
+  rl_kd: [0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5]
+  fixed_kp: [20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0]
+  fixed_kd: [0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5]
+  torque_limits: [10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0]
+
+  # Per-joint action scale: abduction/shoulder joints (indices 0,3,6,9) use
+  # hip_action_scale=0.125; all others use non_hip_action_scale=0.25.
+  action_scale: [0.125, 0.25, 0.25,
+                 0.125, 0.25, 0.25,
+                 0.125, 0.25, 0.25,
+                 0.125, 0.25, 0.25]
+
+  # UniLab "home" keyframe (locomotion_task.xml): [0, 0.7, -1.4] per leg.
+  default_dof_pos: [ 0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40]
+
+  lin_vel_scale: 1.0
+  ang_vel_scale: 0.25
+  dof_pos_scale: 1.0
+  dof_vel_scale: 0.05
+  commands_scale: [1.0, 1.0, 1.0]

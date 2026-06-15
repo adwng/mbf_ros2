@@ -1,0 +1,78 @@
+# UniLab MbfWalkFlat policy (PPO / MLX PPO), exported to ONNX.
+#
+# Observation (49) — matches unilab/envs/locomotion/mbf/joystick.py _compute_obs:
+#   ang_vel(3) + gravity_upvector(3) + (dof_pos-default)(12) + dof_vel(12)
+#   + actions(12) + commands(3) + feet_phase(4)
+# UniLab applies NO scaling to ang_vel / dof_vel / commands in the flat task, so
+# the corresponding scales are 1.0. "gravity_upvector" is -upvector (see rl_sdk).
+# Drop the exported policy in this folder as policy.onnx, then set
+# `rl_config: unilab_flat` in policy/mbf/base.yaml.
+
+mbf/unilab_flat:
+  model_name: "policy.onnx"
+  num_observations: 49
+  observations: ["ang_vel", "gravity_upvector", "dof_pos", "dof_vel", "actions", "commands", "feet_phase"]
+  observations_history: []
+  observations_history_priority: "time"
+  clip_obs: 100.0
+
+  clip_actions_lower: [-100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0,
+                       -100.0, -100.0, -100.0]
+  clip_actions_upper: [100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0,
+                       100.0, 100.0, 100.0]
+
+  num_of_dofs: 12
+  wheel_indices: []
+  joint_mapping: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+  rl_kp: [20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0,
+          20.0, 20.0, 20.0]
+  rl_kd: [0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5]
+  fixed_kp: [20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0,
+             20.0, 20.0, 20.0]
+  fixed_kd: [0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5,
+             0.5, 0.5, 0.5]
+  torque_limits: [10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0,
+                  10.0, 10.0, 10.0]
+
+  # action -> target = action * action_scale + default_dof_pos
+  action_scale: [0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25,
+                 0.25, 0.25, 0.25]
+
+  # UniLab "home" keyframe (scene_flat.xml): [0, 0.7, -1.4] per leg.
+  default_dof_pos: [ 0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40]
+
+  # Observation scales (raw / unity for the flat task).
+  lin_vel_scale: 1.0
+  ang_vel_scale: 1.0
+  dof_pos_scale: 1.0
+  dof_vel_scale: 1.0
+  commands_scale: [1.0, 1.0, 1.0]
+
+  # feet_phase gait clock: trot gait, 2 Hz. Offsets are [FL, FR, RL, RR].
+  # Phase advance per step = gait_frequency * dt * decimation = 2 * 0.005 * 4 = 0.04.
+  # The clock freezes at phase 0 (all feet in stance) when the command norm is at
+  # or below gait_command_threshold, matching UniLab's stand-still gait gating.
+  gait_frequency: 2.0
+  gait_offsets: [0.0, 0.5, 0.5, 0.0]
+  gait_command_threshold: 0.1

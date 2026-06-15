@@ -43,6 +43,7 @@ class RobotHardwareInterface final : public hardware_interface::SystemInterface 
   std::vector<Axis> axes_;
   std::string can_intf_name_;
   int logging_;
+  int read_torques;
   SocketCanIntf can_intf_;
   rclcpp::Time timestamp_;
 };
@@ -148,6 +149,7 @@ CallbackReturn RobotHardwareInterface::on_init(
 
   can_intf_name_ = info_.hardware_parameters["can"];
   logging_ = std::stoi(info_.hardware_parameters.at("logging"));
+  read_torques = std::stoi(info_.hardware_parameters.at("read_torques"));
 
   for (auto& joint : info_.joints) {
     uint32_t node_id = std::stoi(joint.parameters.at("node_id"));
@@ -313,9 +315,17 @@ RobotHardwareInterface::export_state_interfaces() {
   std::vector<hardware_interface::StateInterface> state_interfaces;
 
   for (size_t i = 0; i < info_.joints.size(); i++) {
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
+    // return torque_targets if not reading torques
+    if (read_torques) {
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_EFFORT,
         &axes_[i].torque_estimate_));
+    } else {
+      state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints[i].name, hardware_interface::HW_IF_EFFORT,
+        &axes_[i].torque_target_));
+    }
+    
     state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_VELOCITY,
         &axes_[i].vel_estimate_));
@@ -398,8 +408,9 @@ return_type RobotHardwareInterface::read(const rclcpp::Time& timestamp,
 
   // The SteadyWin GIM6010-8 firmware does not broadcast Get_Torques (0x01C)
   // cyclically, so poll it via RTR every cycle. The device replies with a
-  // standard data frame which Axis::on_can_msg decodes on the next read().
-  if (active_) {
+  // standard data frame which Axis::on_can_msg decodes on the next read(). 
+  // Only activate if needed by xacro, otherwise don't read. This is to prevent consecutive RTR polling
+  if (active_ && read_torques) {
     for (auto& axis : axes_) {
       axis.request<Get_Torques_msg_t>();
     }

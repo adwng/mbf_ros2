@@ -78,6 +78,16 @@ std::vector<float> RL::ComputeObservation() {
     } else if (observation == "gravity_vec") {
       obs_list.push_back(
           QuatRotateInverse(this->obs.base_quat, this->obs.gravity_vec));
+    } else if (observation == "gravity_upvector") {
+      // UniLab gravity observation = -upvector, where "upvector" is the MuJoCo
+      // framezaxis sensor on the IMU site: the body z-axis expressed in the
+      // world frame, i.e. the third column of R(base_quat). This differs from
+      // "gravity_vec" (= R^T * [0,0,-1], the third row); they only share the
+      // z component, so UniLab policies require this dedicated term.
+      // base_quat is stored as [w, x, y, z].
+      std::vector<float> rot = QuaternionToRotationMatrix(this->obs.base_quat);
+      std::vector<float> upvector = {rot[2], rot[5], rot[8]};  // third column
+      obs_list.push_back(-upvector);
     } else if (observation == "commands") {
       obs_list.push_back(
           this->obs.commands *
@@ -96,6 +106,41 @@ std::vector<float> RL::ComputeObservation() {
                          this->params.Get<float>("dof_vel_scale"));
     } else if (observation == "actions") {
       obs_list.push_back(this->obs.actions);
+    } else if (observation == "feet_phase") {
+      // UniLab gait-clock observation: a per-foot phase in [0, 1). The shared
+      // phase advances by gait_frequency * (dt * decimation) each policy step
+      // (matching UniLab's update_state, which advances before building obs),
+      // and each foot is offset by "gait_offsets" (default trot [0,0.5,0.5,0]
+      // for FL, FR, RL, RR).
+      const float rl_dt =
+          this->params.Get<float>("dt") * this->params.Get<int>("decimation");
+      const float gait_frequency = this->params.Get<float>("gait_frequency", 0.0f);
+      // Gate the gait clock on the command: with (near) zero command the clock
+      // freezes at phase 0 so all feet read as stance, matching UniLab training
+      // (the policy was rewarded for standing, not marching in place).
+      float command_norm = 0.0f;
+      for (float c : this->obs.commands) command_norm += c * c;
+      command_norm = std::sqrt(command_norm);
+      const float stand_threshold =
+          this->params.Get<float>("gait_command_threshold", 0.1f);
+      if (command_norm <= stand_threshold) {
+        this->unilab_gait_phase = 0.0f;
+      } else {
+        this->unilab_gait_phase =
+            std::fmod(this->unilab_gait_phase + gait_frequency * rl_dt, 1.0f);
+      }
+      std::vector<float> gait_offsets =
+          this->params.Get<std::vector<float>>("gait_offsets");
+      if (gait_offsets.empty()) {
+        gait_offsets = {0.0f, 0.5f, 0.5f, 0.0f};
+      }
+      std::vector<float> feet_phase;
+      feet_phase.reserve(gait_offsets.size());
+      for (float offset : gait_offsets) {
+        feet_phase.push_back(std::fmod(this->unilab_gait_phase + offset, 1.0f));
+      }
+      this->obs.feet_phase = feet_phase;
+      obs_list.push_back(feet_phase);
     }
     // ============= WTW Observations =============
     else if (observation == "clock_sin") {
@@ -151,7 +196,9 @@ void RL::InitObservations() {
   this->obs.foot_clearance_obs = {0.04f};
   this->obs.pitch_obs = {0.0f};
   this->obs.gait_theta = {0.0f, 0.5f, 0.5f, 0.0f};
+  this->obs.feet_phase = {0.0f, 0.5f, 0.5f, 0.0f};
   this->obs.gait_phase_obs = {0.0f, 0.0f};
+  this->unilab_gait_phase = 0.0f;
   this->ComputeGaitPhase();
   this->ComputeObservation();
 }
@@ -191,6 +238,11 @@ void RL::InitRL(std::string robot_config_path) {
   this->InitObservations();
   this->InitOutputs();
   this->InitControl();
+
+  // InitObservations() invokes ComputeObservation() once to size obs_dims,
+  // which advances the UniLab gait clock by one step. Reset it so the first
+  // live policy step starts at phase 0 (matching the training reset state).
+  this->unilab_gait_phase = 0.0f;
 
   // init obs history
   const auto& observations_history = this->params.Get<std::vector<int>>(

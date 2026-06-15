@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 mbf/mjlab:
-  model_name: "policy.onnx"
+  model_name: "policy_rough.onnx"
   num_observations: 47
   observations: ["ang_vel", "gravity_vec", "commands", "period", "dof_pos", "dof_vel", "actions"]
   period: 0.6
-  observations_history: []  # 0 is the latest observation
-  observations_history_priority: "time"  # "time" or "term" priority
+  observations_history: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]  # 0 is the latest observation
+#   observations_history: []  # 0 is the latest observation
+  observations_history_priority: "term"  # "time" or "term" priority
   clip_obs: 100.0
   clip_actions_lower: [-100.0, -100.0, -100.0,
                        -100.0, -100.0, -100.0,
@@ -48,8 +49,8 @@ mbf/mjlab:
                   10.0, 10.0, 10.0,
                   10.0, 10.0, 10.0,
                   10.0, 10.0, 10.0]
-  default_dof_pos: [ 0.00, 0.80, -1.50,
-                     0.00, 0.80, -1.50,
-                     0.00, 0.80, -1.50,
-                     0.00, 0.80, -1.50]
+  default_dof_pos: [ 0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40,
+                     0.00, 0.70, -1.40]
   joint_mapping: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]

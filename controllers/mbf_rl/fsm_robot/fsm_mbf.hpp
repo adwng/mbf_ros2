@@ -161,8 +161,10 @@ public:
         percent_transition = 0.0f;
         rl.episode_length_buf = 0;
 
-        // read params from yaml
-        rl.config_name = "legged_gym_ex";
+        // Policy selection: "rl_config" in base.yaml chooses which policy
+        // folder under policy/<robot>/ to load (e.g. himloco, genesis, wtw,
+        // unilab_flat, unilab_rough, unilab_handstand). Defaults to himloco.
+        rl.config_name = rl.params.Get<std::string>("rl_config", "himloco");
         std::string robot_config_path = rl.robot_name + "/" + rl.config_name;
         try
         {
