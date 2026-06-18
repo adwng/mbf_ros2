@@ -459,13 +459,14 @@ return_type RobotHardwareInterface::write(const rclcpp::Time&,
     }
 
     if (logging_ == 1) {
-      RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
-                  "[Joint: %s] cmd_pos: %.4f rad, cmd_vel: %.4f rad/s, "
-                  "cmd_torque: %.4f Nm | "
-                  "pos_est: %.4f rad, vel_est: %.4f rad/s, torque_est: %.4f Nm",
-                  info_.joints[i].name.c_str(), axis.pos_setpoint_,
-                  axis.vel_setpoint_, axis.torque_setpoint_, axis.pos_estimate_,
-                  axis.vel_estimate_, axis.torque_estimate_);
+        const double logged_torque = read_torques ? axis.torque_estimate_ : axis.torque_setpoint_;
+        RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
+                    "[Joint: %s] cmd_pos: %.4f rad, cmd_vel: %.4f rad/s, "
+                    "cmd_torque: %.4f Nm | "
+                    "pos_est: %.4f rad, vel_est: %.4f rad/s, torque_est: %.4f Nm",
+                    info_.joints[i].name.c_str(), axis.pos_setpoint_,
+                    axis.vel_setpoint_, axis.torque_setpoint_, axis.pos_estimate_,
+                    axis.vel_estimate_, logged_torque);
     }
   }
 

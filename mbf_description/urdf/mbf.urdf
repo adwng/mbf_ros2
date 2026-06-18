@@ -7,10 +7,10 @@
     <parent link="base_link"/>
     <child link="chassis"/>
   </joint>
-  <link name="imu_link"></link>
+  <link name="base_imu_link"></link>
   <joint name="imu_joint" type="fixed">
     <parent link="chassis"/>
-    <child link="imu_link"/>
+    <child link="base_imu_link"/>
   </joint>
 
   <!-- Link chassis -->

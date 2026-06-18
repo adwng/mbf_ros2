@@ -12,12 +12,12 @@ controller_manager:
 robot_controller:
   ros__parameters:
     joints:
-      # - fl_shoulder_joint
+      - fl_shoulder_joint
       # - fl_hip_joint
       # - fl_knee_joint
       - fr_shoulder_joint
-      - fr_hip_joint
-      - fr_knee_joint
+      # - fr_hip_joint
+      # - fr_knee_joint
       # - rl_shoulder_joint
       # - rl_hip_joint
       # - rl_knee_joint
