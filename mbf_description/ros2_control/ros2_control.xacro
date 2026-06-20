@@ -4,7 +4,7 @@
         <ros2_control name="robot_hardware_interface" type="system">
             <hardware>
                 <plugin>robot_ros2_control/RobotHardwareInterface</plugin>
-                <param name="logging">1</param>
+                <param name="logging">0</param>
                 <param name="read_torques">0</param>
                 <param name="can">can0</param>
             </hardware>
@@ -16,20 +16,20 @@
                 <param name="offset">0.4</param>
                 <param name="axis_direction">-1.0</param>
             </joint>
-            <!-- <joint name="fl_hip_joint">
+            <joint name="fl_hip_joint">
                 <param name="node_id">1</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
-                <param name="offset">0.0</param>
-                <param name="axis_direction">1.0</param>
+                <param name="offset">1.57</param>
+                <param name="axis_direction">-1.0</param>
             </joint>
             <joint name="fl_knee_joint">
                 <param name="node_id">2</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
-                <param name="offset">0.0</param>
-                <param name="axis_direction">1.0</param>
-            </joint> -->
+                <param name="offset">2.5</param>
+                <param name="axis_direction">-1.0</param>
+            </joint>
             <joint name="fr_shoulder_joint">
                 <param name="node_id">3</param>
                 <param name="reduction_ratio">8.0</param>
@@ -37,20 +37,20 @@
                 <param name="offset">-0.4</param>
                 <param name="axis_direction">-1</param>
             </joint>
-            <!-- <joint name="fr_hip_joint">
+            <joint name="fr_hip_joint">
                 <param name="node_id">4</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
-                <param name="offset">-3.14</param>
+                <param name="offset">1.57</param>
                 <param name="axis_direction">1</param>
-            </joint> -->
-            <!-- <joint name="fr_knee_joint">
+            </joint> 
+            <joint name="fr_knee_joint">
                 <param name="node_id">5</param>
                 <param name="reduction_ratio">8.0</param>
                 <param name="auto_offset">1</param>
                 <param name="offset">2.5</param>
                 <param name="axis_direction">1</param>
-            </joint> -->
+            </joint>
             <!-- <joint name="rl_shoulder_joint">
                 <param name="node_id">6</param>
                 <param name="reduction_ratio">8.0</param>
