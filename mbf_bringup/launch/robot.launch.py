@@ -40,8 +40,8 @@ def generate_launch_description():
         package='imu',
         executable='imu_node',
         parameters=[{
-            'port_name': '/dev/ttyUSB0',
-            'rate': 60
+            'port_name': '/dev/ttyAMA1',
+            'rate': 200
         }],
         condition=UnlessCondition(
             LaunchConfiguration("use_sim")
