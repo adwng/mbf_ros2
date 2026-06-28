@@ -15,6 +15,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
 )
 
 find_package(ament_cmake REQUIRED)
+find_package(Threads REQUIRED)
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
@@ -31,6 +32,8 @@ add_library(
 
 
 target_compile_features(robot_hardware_interface PUBLIC cxx_std_17)
+
+target_link_libraries(robot_hardware_interface PUBLIC Threads::Threads)
 
 ament_target_dependencies(
   robot_hardware_interface PUBLIC

@@ -1,3 +1,8 @@
+
+#include <chrono>
+#include <mutex>
+#include <thread>
+
 #include "can_helpers.hpp"
 #include "can_simple_messages.hpp"
 #include "hardware_interface/system_interface.hpp"
@@ -45,7 +50,9 @@ class RobotHardwareInterface final : public hardware_interface::SystemInterface 
   int logging_;
   int read_torques;
   SocketCanIntf can_intf_;
-  rclcpp::Time timestamp_;
+  // Guards the per-axis estimate staging fields (*_raw_) which are written by
+  // the CAN RX thread and consumed by the control thread in read()/on_activate.
+  std::mutex state_mutex_;
 };
 
 struct Axis {
@@ -95,6 +102,15 @@ struct Axis {
   // double motor_temperature_ = NAN;
   // double bus_voltage_ = NAN;
   // double bus_current_ = NAN;
+
+  // Staging copies written by the CAN RX thread (in on_can_msg) and published
+  // into the controller-visible estimates above during read(), under
+  // RobotHardwareInterface::state_mutex_. Keeping the exported doubles
+  // single-writer (control thread) avoids torn reads by downstream controllers.
+  double pos_estimate_raw_ = NAN;
+  double vel_estimate_raw_ = NAN;
+  double torque_target_raw_ = NAN;
+  double torque_estimate_raw_ = NAN;
 
   // Indicates which controller inputs are enabled. This is configured by the
   // controller that sits on top of this hardware interface. Multiple inputs
@@ -186,6 +202,16 @@ CallbackReturn RobotHardwareInterface::on_configure(const State&) {
                  can_intf_name_.c_str());
     return CallbackReturn::ERROR;
   }
+
+  // Drain CAN RX on a dedicated thread so inbound encoder/torque frames are
+  // consumed as they arrive instead of in a burst inside read(). This keeps the
+  // control cycle from being eaten by RX processing and smooths bus/SPI load.
+  if (!can_intf_.start_rx_thread()) {
+    RCLCPP_ERROR(rclcpp::get_logger("RobotHardwareInterface"),
+                 "Failed to start CAN RX thread");
+    return CallbackReturn::ERROR;
+  }
+
   RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
               "Initialized SocketCAN on %s", can_intf_name_.c_str());
   return CallbackReturn::SUCCESS;
@@ -203,28 +229,37 @@ CallbackReturn RobotHardwareInterface::on_activate(const State&) {
   active_ = true;
 
   // Reset encoder readiness on every activation so we always use fresh data.
-  for (auto& axis : axes_) {
-    axis.encoder_ready_ = false;
-    axis.pos_estimate_ = NAN;
-    axis.vel_estimate_ = NAN;
-    axis.torque_target_ = NAN;
-    axis.torque_estimate_ = NAN;
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    for (auto& axis : axes_) {
+      axis.encoder_ready_ = false;
+      axis.pos_estimate_ = NAN;
+      axis.vel_estimate_ = NAN;
+      axis.torque_target_ = NAN;
+      axis.torque_estimate_ = NAN;
+      axis.pos_estimate_raw_ = NAN;
+      axis.vel_estimate_raw_ = NAN;
+      axis.torque_target_raw_ = NAN;
+      axis.torque_estimate_raw_ = NAN;
+    }
   }
 
-  // Wait briefly to collect initial encoder values
+  // Wait briefly to collect initial encoder values. The RX thread populates the
+  // staging fields asynchronously, so we just poll readiness here.
   RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
               "Waiting for encoder estimates...");
 
   auto start = std::chrono::steady_clock::now();
 
   while (true) {
-    can_intf_.read_nonblocking();
-
     bool all_ready = true;
-    for (auto& axis : axes_) {
-      if (axis.auto_offset_ == 1 && !axis.encoder_ready_) {
-        all_ready = false;
-        break;
+    {
+      std::lock_guard<std::mutex> lock(state_mutex_);
+      for (auto& axis : axes_) {
+        if (axis.auto_offset_ == 1 && !axis.encoder_ready_) {
+          all_ready = false;
+          break;
+        }
       }
     }
 
@@ -235,10 +270,24 @@ CallbackReturn RobotHardwareInterface::on_activate(const State&) {
                   "Timeout waiting for encoder estimates");
       break;
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 
   RCLCPP_INFO(rclcpp::get_logger("RobotHardwareInterface"),
               "Capturing startup encoder positions.");
+
+  // Publish the latest staged estimates so the offset capture below (and the
+  // first control cycle) sees fresh values.
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    for (auto& axis : axes_) {
+      axis.pos_estimate_ = axis.pos_estimate_raw_;
+      axis.vel_estimate_ = axis.vel_estimate_raw_;
+      axis.torque_target_ = axis.torque_target_raw_;
+      axis.torque_estimate_ = axis.torque_estimate_raw_;
+    }
+  }
 
   bool auto_offset_failed = false;
   for (auto& axis : axes_) {
@@ -325,7 +374,7 @@ RobotHardwareInterface::export_state_interfaces() {
         info_.joints[i].name, hardware_interface::HW_IF_EFFORT,
         &axes_[i].torque_target_));
     }
-    
+
     state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_VELOCITY,
         &axes_[i].vel_estimate_));
@@ -397,19 +446,26 @@ return_type RobotHardwareInterface::perform_command_mode_switch(
   return return_type::OK;
 }
 
-return_type RobotHardwareInterface::read(const rclcpp::Time& timestamp,
+return_type RobotHardwareInterface::read(const rclcpp::Time&,
                                        const rclcpp::Duration&) {
-  timestamp_ = timestamp;
-
-  while (can_intf_.read_nonblocking()) {
-    // Drain inbound frames; this consumes replies to the previous cycle's
-    // Get_Torques RTRs as well as any cyclic encoder broadcasts.
+  // Inbound frames are drained by the dedicated RX thread (see
+  // SocketCanIntf::start_rx_thread). Here we just publish the most recent
+  // staged estimates into the controller-visible fields under the lock.
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    for (auto& axis : axes_) {
+      axis.pos_estimate_ = axis.pos_estimate_raw_;
+      axis.vel_estimate_ = axis.vel_estimate_raw_;
+      axis.torque_target_ = axis.torque_target_raw_;
+      axis.torque_estimate_ = axis.torque_estimate_raw_;
+    }
   }
 
   // The SteadyWin GIM6010-8 firmware does not broadcast Get_Torques (0x01C)
   // cyclically, so poll it via RTR every cycle. The device replies with a
-  // standard data frame which Axis::on_can_msg decodes on the next read(). 
-  // Only activate if needed by xacro, otherwise don't read. This is to prevent consecutive RTR polling
+  // standard data frame which Axis::on_can_msg decodes (on the RX thread).
+  // Only activate if needed by xacro, otherwise don't read. This is to prevent
+  // consecutive RTR polling and the extra request+reply frames it costs.
   if (active_ && read_torques) {
     for (auto& axis : axes_) {
       axis.request<Get_Torques_msg_t>();
@@ -455,6 +511,7 @@ return_type RobotHardwareInterface::write(const rclcpp::Time&,
       Set_Input_Torque_msg_t msg;
       msg.Input_Torque =
           axis.torque_setpoint_ / axis.reduction_ratio_ * axis.axis_direction_;
+          // axis.torque_setpoint_  * axis.axis_direction_;
       axis.send(msg);
     }
 
@@ -474,9 +531,12 @@ return_type RobotHardwareInterface::write(const rclcpp::Time&,
 }
 
 void RobotHardwareInterface::on_can_msg(const can_frame& frame) {
+  // Invoked from the CAN RX thread. Guard the staged estimates against the
+  // control thread's read()/on_activate consumption.
+  std::lock_guard<std::mutex> lock(state_mutex_);
   for (auto& axis : axes_) {
     if ((frame.can_id >> 5) == axis.node_id_) {
-      axis.on_can_msg(timestamp_, frame);
+      axis.on_can_msg(rclcpp::Time(), frame);
     }
   }
 }
@@ -537,24 +597,25 @@ void Axis::on_can_msg(const rclcpp::Time&, const can_frame& frame) {
     return true;
   };
 
+  // Runs on the CAN RX thread. Writes go to the *_raw_ staging fields (the
+  // caller holds state_mutex_); the control thread publishes them in read().
   switch (cmd) {
     case Get_Encoder_Estimates_msg_t::cmd_id: {
       if (Get_Encoder_Estimates_msg_t msg; try_decode(msg)) {
-        pos_estimate_ =
+        pos_estimate_raw_ =
             ((msg.Pos_Estimate - offset_) * (2 * M_PI) / reduction_ratio_) *
             axis_direction_;
-        vel_estimate_ = (msg.Vel_Estimate * (2 * M_PI) / reduction_ratio_) *
-                        axis_direction_;
+        vel_estimate_raw_ = (msg.Vel_Estimate * (2 * M_PI) / reduction_ratio_) *
+                            axis_direction_;
         encoder_ready_ = true;
       }
     } break;
     case Get_Torques_msg_t::cmd_id: {
       if (Get_Torques_msg_t msg; try_decode(msg)) {
-        torque_target_ =
+        torque_target_raw_ =
             (msg.Torque_Target / reduction_ratio_) * axis_direction_;
-        torque_estimate_ =
+        torque_estimate_raw_ =
             (msg.Torque_Estimate * reduction_ratio_) * axis_direction_;
-        ;
       }
     } break;
       // silently ignore unimplemented command IDs

@@ -5,11 +5,17 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <sys/types.h>
+#include <sys/eventfd.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <cerrno>
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <poll.h>
+
+SocketCanIntf::~SocketCanIntf() {
+    stop_rx_thread();
+}
 
 bool SocketCanIntf::init(const std::string& interface, EpollEventLoop* event_loop, FrameProcessor frame_processor) {
     interface_ = interface;
@@ -67,6 +73,7 @@ bool SocketCanIntf::init(const std::string& interface, EpollEventLoop* event_loo
 }
 
 void SocketCanIntf::deinit() {
+    stop_rx_thread();
     if (!broken_) {
         event_loop_->deregister_event(socket_evt_id_);
     }
@@ -74,10 +81,96 @@ void SocketCanIntf::deinit() {
     broken_ = true;
 }
 
+bool SocketCanIntf::start_rx_thread() {
+    if (rx_running_.exchange(true)) {
+        // Already running.
+        return true;
+    }
+
+    // eventfd used to wake the blocking poll() in the RX thread on shutdown.
+    stop_fd_ = eventfd(0, EFD_NONBLOCK);
+    if (stop_fd_ == -1) {
+        std::cerr << "Failed to create stop eventfd: " << std::strerror(errno)
+                  << std::endl;
+        rx_running_.store(false);
+        return false;
+    }
+
+    rx_thread_ = std::thread(&SocketCanIntf::rx_thread_func, this);
+    return true;
+}
+
+void SocketCanIntf::stop_rx_thread() {
+    if (!rx_running_.exchange(false)) {
+        return;
+    }
+
+    if (stop_fd_ != -1) {
+        const uint64_t val = 1;
+        ssize_t n = write(stop_fd_, &val, sizeof(val));
+        (void)n;  // Best-effort wakeup; the thread also checks rx_running_.
+    }
+
+    if (rx_thread_.joinable()) {
+        rx_thread_.join();
+    }
+
+    if (stop_fd_ != -1) {
+        close(stop_fd_);
+        stop_fd_ = -1;
+    }
+}
+
+void SocketCanIntf::rx_thread_func() {
+    struct pollfd pfds[2];
+    pfds[0].fd = socket_id_;
+    pfds[0].events = POLLIN;
+    pfds[1].fd = stop_fd_;
+    pfds[1].events = POLLIN;
+
+    while (rx_running_.load(std::memory_order_relaxed)) {
+        pfds[0].revents = 0;
+        pfds[1].revents = 0;
+
+        int ret = poll(pfds, 2, -1);
+        if (ret < 0) {
+            if (errno == EINTR) continue;
+            std::cerr << "CAN RX poll failed: " << std::strerror(errno)
+                      << std::endl;
+            break;
+        }
+
+        // Shutdown requested via the stop eventfd.
+        if (pfds[1].revents & POLLIN) break;
+
+        if (pfds[0].revents & POLLIN) {
+            // Drain all currently-available frames in one go.
+            while (read_nonblocking() &&
+                   rx_running_.load(std::memory_order_relaxed)) {
+            }
+        }
+
+        if (pfds[0].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            std::cerr << "CAN interface error on RX poll" << std::endl;
+            break;
+        }
+    }
+}
+
 bool SocketCanIntf::send_can_frame(const can_frame& frame) {
     ssize_t nbytes = write(socket_id_, &frame, sizeof(frame));
-    if (nbytes == -1) {
-        std::cerr << "Failed to send CAN frame" << std::endl;
+    if (nbytes != static_cast<ssize_t>(sizeof(frame))) {
+        const uint64_t n = tx_drop_count_.fetch_add(1, std::memory_order_relaxed) + 1;
+        // Throttle logging: emit on the first drop and then every 100th. Writing
+        // to stderr is synchronous and would itself worsen an overload if logged
+        // on every failed frame inside the control loop. errno distinguishes the
+        // common cause (ENOBUFS: TX queue full -> CAN controller can't keep up)
+        // from genuine faults.
+        if (n == 1 || (n % 100) == 0) {
+            std::cerr << "Failed to send CAN frame (errno=" << errno << ": "
+                      << std::strerror(errno) << "), total drops=" << n
+                      << std::endl;
+        }
         return false;
     }
 
